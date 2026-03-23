@@ -1,0 +1,896 @@
+/*HeadCount_Ativos
+
+Indice de colunas:
+    col_1 = cad,
+    col_2 = nome_completo,
+    col_3 = cpf,
+    col_4 = matricula_ldap,
+    col_5 = contato,
+    col_6 = pcd,
+    col_7 = logradouro,
+    col_8 = numero,
+    col_9 = bairro,
+    col_10 = cidade,
+    col_11 = estado,
+    col_12 = cep,
+    col_13 = empresa,
+    col_14 = turno,
+    col_15 = escala,
+    col_16 = horario_entrada_turno,
+    col_17 = horario_saida_turno,
+    col_18 = possui_linha_vinculada,
+    col_19 = vt,
+    col_20 = linha,
+    col_21 = perfil,
+    col_22 = capacidade,
+    col_23 = distancia_sla,
+    col_24 = tempo_de_rota
+    data_atualizacao*/
+
+
+/***************************************
+ * CONFIG
+ ***************************************/
+const EXECUTOR_PROJECT_ID = 'meli-bi-data';
+const DATASET_TABLE = '`meli-sbox.PEOPLEOPS.HeadCount_Ativos_Geolocalizado`';
+
+/***************************************
+ * ROTEADOR MULTI-PAGE (SEGURO)
+ ***************************************/
+function doGet(e) {
+  const pageParam = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'Ocupacao';
+  const allowedPages = ['SLA_Candidatos', 'SLA_Validacao','Ocupacao'];
+  const page = allowedPages.includes(pageParam) ? pageParam : 'Ocupacao';
+
+  const template = HtmlService.createTemplateFromFile(page);
+  template.baseURL = ScriptApp.getService().getUrl(); // importante para links do menu
+
+  return template.evaluate()
+    .setTitle('Dashboard Mercado Livre - ' + page)
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+function getServiceAccountToken() {
+  var props = PropertiesService.getScriptProperties();
+  var clientEmail = props.getProperty('SA_CLIENT_EMAIL');
+  var privateKey = props.getProperty('SA_PRIVATE_KEY');
+
+  if (!clientEmail || !privateKey) {
+    throw new Error("Credenciais da Service Account (SA_CLIENT_EMAIL/SA_PRIVATE_KEY) não encontradas.");
+  }
+
+  // 1. Prepara a chave privada (corrige quebras de linha se houver)
+  privateKey = privateKey.replace(/\\n/g, '\n');
+
+  // 2. Define o Header e o ClaimSet (Payload) do JWT
+  var header = { "alg": "RS256", "typ": "JWT" };
+  var now = Math.floor(Date.now() / 1000);
+  
+  var claimSet = { 
+    "iss": clientEmail, 
+    "scope": "https://www.googleapis.com/auth/bigquery https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/cloud-platform", 
+    "aud": "https://oauth2.googleapis.com/token", 
+    "exp": now + 3600, 
+    "iat": now 
+  };
+
+  // 3. Função de Encode Base64 WebSafe
+  var encode = function(obj) { 
+    return Utilities.base64EncodeWebSafe(JSON.stringify(obj)).replace(/=+$/, ''); 
+  };
+  
+  // 4. Cria a assinatura RSA-SHA256
+  var signatureInput = encode(header) + "." + encode(claimSet);
+  var signature = Utilities.computeRsaSha256Signature(signatureInput, privateKey);
+  var jwt = signatureInput + "." + Utilities.base64EncodeWebSafe(signature).replace(/=+$/, '');
+
+  // 5. Solicita o Token ao Google via POST
+  var options = { 
+    "method": "post", 
+    "payload": { 
+      "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer", 
+      "assertion": jwt 
+    }, 
+    "muteHttpExceptions": true 
+  };
+
+  var response = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", options);
+  var result = JSON.parse(response.getContentText());
+
+  if (result.error) {
+    throw new Error("Erro na geração do Token: " + result.error_description);
+  }
+  
+  return result.access_token;
+}
+
+function getAppUrl() {
+  return ScriptApp.getService().getUrl();
+}
+
+function getDadosUsuario() {
+  try {
+    var usuario = People.People.get('people/me', {
+      personFields: 'names,photos,emailAddresses'
+    });
+
+    var resultado = {
+      nome: 'Colaborador',
+      foto: null,
+      email: Session.getActiveUser().getEmail() || ''
+    };
+
+    if (usuario.names && usuario.names.length > 0) {
+      resultado.nome = usuario.names[0].displayName;
+    }
+
+    if (usuario.photos && usuario.photos.length > 0) {
+      resultado.foto = usuario.photos[0].url;
+    }
+
+    if (usuario.emailAddresses && usuario.emailAddresses.length > 0) {
+      resultado.email = usuario.emailAddresses[0].value || resultado.email;
+    }
+
+    return resultado;
+  } catch (e) {
+    return {
+      nome: 'Visitante',
+      foto: null,
+      email: Session.getActiveUser().getEmail() || ''
+    };
+  }
+}
+
+/***************************************
+ * BUNDLE ÚNICO (cache parcial)
+ * Cache: cards + gráfico + tabela agregada
+ * Sem cache: mapa detalhado
+ ***************************************/
+function getDashboardBundle(filtros) {
+  try {
+    filtros = filtros || {};
+
+    const cache = CacheService.getScriptCache();
+    const hash = Utilities.base64EncodeWebSafe(JSON.stringify(filtros));
+
+    const kCards  = 'bundle:cards:' + hash;
+    const kGraf   = 'bundle:graf:' + hash;
+    const kTabela = 'bundle:tab:' + hash;
+
+    let cards = cache.get(kCards);
+    let graficoRegional = cache.get(kGraf);
+    let tabelaAgregada = cache.get(kTabela);
+
+    cards = cards ? JSON.parse(cards) : null;
+    graficoRegional = graficoRegional ? JSON.parse(graficoRegional) : null;
+    tabelaAgregada = tabelaAgregada ? JSON.parse(tabelaAgregada) : null;
+
+    if (!cards) {
+      const c = getDashboardCards(filtros); // retorna {status,data}
+      cards = (c && c.data) ? c.data : {};
+      safePutCache(cache, kCards, cards, 180);
+    }
+
+    if (!graficoRegional) {
+      graficoRegional = getDadosGraficoRegional(filtros) || [];
+      safePutCache(cache, kGraf, graficoRegional, 180);
+    }
+
+    if (!tabelaAgregada) {
+      tabelaAgregada = getTabelaAgregada(filtros) || [];
+      safePutCache(cache, kTabela, tabelaAgregada, 180);
+    }
+
+    // mapa fora de cache (dados ao vivo)
+    const mapaDetalhado = getDadosMapaDetalhado(filtros) || [];
+
+    return {
+      status: 'ok',
+      cards: cards,
+      graficoRegional: graficoRegional,
+      tabelaAgregada: tabelaAgregada,
+      mapaDetalhado: mapaDetalhado
+    };
+
+  } catch (e) {
+    console.error('Erro getDashboardBundle: ' + e.message);
+    return {
+      status: 'error',
+      message: e.message,
+      cards: {},
+      graficoRegional: [],
+      tabelaAgregada: [],
+      mapaDetalhado: []
+    };
+  }
+}
+
+function safePutCache(cache, key, valueObj, ttlSeconds) {
+  const payload = JSON.stringify(valueObj);
+  // evita "Argumento grande demais"
+  if (payload.length < 90000) {
+    cache.put(key, payload, ttlSeconds || 120);
+  }
+}
+
+/***************************************
+ * CARDS
+ ***************************************/
+function getDashboardCards(filtros) {
+  try {
+    const where = construirWhere(filtros);
+
+    const sql = `
+      WITH base AS (
+        SELECT
+          col_1 AS cad,
+          col_20 AS linha,
+          SAFE_CAST(NULLIF(col_22, '') AS INT64) AS capacidade,
+          chave_cad_linha_turno
+        FROM ${DATASET_TABLE}
+        ${where}
+      ),
+      rotas AS (
+        SELECT
+          chave_cad_linha_turno,
+          MAX(capacidade) AS capacidade,
+          COUNT(1) AS ocupantes
+        FROM base
+        WHERE linha IS NOT NULL AND linha != ''
+        GROUP BY chave_cad_linha_turno
+      )
+      SELECT
+        (SELECT COUNT(1) FROM base) AS total_colaboradores,
+        (SELECT IFNULL(SUM(capacidade),0) FROM rotas) AS capacidade_total,
+        (SELECT IFNULL(SUM(ocupantes),0) FROM rotas) AS ocupantes_total
+    `;
+
+    const rows = runQuery_(sql);
+    if (!rows.length) {
+      return { status: 'ok', data: { ocupacaoMedia: 0, totalColaboradores: 0, capacidadeTotal: 0, assentosDisponiveis: 0 } };
+    }
+
+    const totalColaboradores = parseInt(rows[0][0], 10) || 0;
+    const capacidadeTotal = parseInt(rows[0][1], 10) || 0;
+    const ocupantesTotal = parseInt(rows[0][2], 10) || 0;
+    const ocupacaoMedia = capacidadeTotal > 0 ? ((ocupantesTotal / capacidadeTotal) * 100) : 0;
+    const assentosDisponiveis = Math.max(capacidadeTotal - ocupantesTotal, 0);
+
+    return {
+      status: 'ok',
+      data: {
+        ocupacaoMedia: Number(ocupacaoMedia.toFixed(1)),
+        totalColaboradores: totalColaboradores,
+        capacidadeTotal: capacidadeTotal,
+        assentosDisponiveis: assentosDisponiveis
+      }
+    };
+  } catch (e) {
+    console.error('Erro getDashboardCards: ' + e.message);
+    return { status: 'error', data: { ocupacaoMedia: 0, totalColaboradores: 0, capacidadeTotal: 0, assentosDisponiveis: 0 } };
+  }
+}
+
+/***************************************
+ * GRÁFICO REGIONAL
+ ***************************************/
+function getDadosGraficoRegional(filtros) {
+  try {
+    const where = construirWhere(filtros);
+
+    const sql = `
+      WITH base AS (
+        SELECT
+          Regional,
+          col_1 AS cad,
+          col_20 AS linha,
+          SAFE_CAST(NULLIF(col_22, '') AS INT64) AS capacidade,
+          chave_cad_linha_turno
+        FROM ${DATASET_TABLE}
+        ${where}
+      ),
+      rotas AS (
+        SELECT
+          Regional,
+          chave_cad_linha_turno,
+          MAX(capacidade) AS capacidade,
+          COUNT(1) AS ocupantes
+        FROM base
+        WHERE linha IS NOT NULL AND linha != ''
+        GROUP BY Regional, chave_cad_linha_turno
+      )
+      SELECT
+        IFNULL(Regional, 'N/I') AS regional,
+        ROUND(SAFE_DIVIDE(SUM(ocupantes), SUM(capacidade)) * 100, 1) AS ocupacao
+      FROM rotas
+      GROUP BY regional
+      ORDER BY ocupacao DESC
+    `;
+
+    const rows = runQuery_(sql);
+    return rows.map(r => ({
+      regional: r[0] || 'N/I',
+      ocupacao: Number(r[1] || 0)
+    }));
+  } catch (e) {
+    console.error('Erro getDadosGraficoRegional: ' + e.message);
+    return [];
+  }
+}
+
+/***************************************
+ * TABELA AGREGADA (CIDADE/BAIRRO/TURNO)
+ ***************************************/
+function getTabelaAgregada(filtros) {
+  try {
+    const where = construirWhere(filtros);
+
+    const sql = `
+      WITH base AS (
+        SELECT
+          UPPER(TRIM(col_10)) AS cidade,
+          UPPER(TRIM(col_9)) AS bairro,
+          UPPER(TRIM(col_14)) AS turno,
+          col_20 AS linha,
+          SAFE_CAST(NULLIF(col_22, '') AS INT64) AS capacidade,
+          chave_cad_linha_turno
+        FROM ${DATASET_TABLE}
+        ${where}
+      ),
+      rotas AS (
+        SELECT
+          chave_cad_linha_turno,
+          ANY_VALUE(cidade) AS cidade,
+          ANY_VALUE(bairro) AS bairro,
+          ANY_VALUE(turno) AS turno,
+          MAX(capacidade) AS capacidade,
+          COUNT(1) AS ocupantes
+        FROM base
+        WHERE linha IS NOT NULL AND linha != ''
+        GROUP BY chave_cad_linha_turno
+      ),
+      por_cidade AS (
+        SELECT
+          'CIDADE' AS modo,
+          cidade AS label,
+          '' AS bairro_col,
+          SUM(ocupantes) AS pessoas,
+          COUNT(*) AS linhas,
+          GREATEST(SUM(capacidade) - SUM(ocupantes), 0) AS vagas,
+          ROUND(SAFE_DIVIDE(SUM(ocupantes), SUM(capacidade)) * 100, 1) AS percentual
+        FROM rotas
+        GROUP BY cidade
+      ),
+      por_bairro AS (
+        SELECT
+          'BAIRRO' AS modo,
+          cidade AS label,
+          bairro AS bairro_col,
+          SUM(ocupantes) AS pessoas,
+          COUNT(*) AS linhas,
+          GREATEST(SUM(capacidade) - SUM(ocupantes), 0) AS vagas,
+          ROUND(SAFE_DIVIDE(SUM(ocupantes), SUM(capacidade)) * 100, 1) AS percentual
+        FROM rotas
+        GROUP BY cidade, bairro
+      ),
+      por_turno AS (
+        SELECT
+          'TURNO' AS modo,
+          turno AS label,
+          '' AS bairro_col,
+          SUM(ocupantes) AS pessoas,
+          COUNT(*) AS linhas,
+          GREATEST(SUM(capacidade) - SUM(ocupantes), 0) AS vagas,
+          ROUND(SAFE_DIVIDE(SUM(ocupantes), SUM(capacidade)) * 100, 1) AS percentual
+        FROM rotas
+        GROUP BY turno
+      )
+      SELECT * FROM por_cidade
+      UNION ALL
+      SELECT * FROM por_bairro
+      UNION ALL
+      SELECT * FROM por_turno
+    `;
+
+    const rows = runQuery_(sql);
+    return rows.map(r => ({
+      modo: r[0] || '',
+      label: r[1] || '',
+      bairro: r[2] || '',
+      count: parseInt(r[3], 10) || 0,
+      linhas: parseInt(r[4], 10) || 0,
+      vagas: parseInt(r[5], 10) || 0,
+      percentual: Number(r[6] || 0)
+    }));
+  } catch (e) {
+    console.error('Erro getTabelaAgregada: ' + e.message);
+    return [];
+  }
+}
+
+/***************************************
+ * MAPA DETALHADO (SEM CACHE)
+ ***************************************/
+function getDadosMapaDetalhado(filtros) {
+  try {
+    const whereStatement = construirWhere(filtros);
+    const prefixoGeo = (whereStatement && whereStatement.trim() !== "") ? " AND " : " WHERE ";
+
+    const sql = `
+      SELECT 
+        latitude, 
+        longitude, 
+        col_1 as cad, 
+        UPPER(TRIM(col_10)) as cidade, 
+        UPPER(TRIM(col_9)) as bairro,
+        col_14 as turno, 
+        col_20 as linha, 
+        SAFE_CAST(NULLIF(col_22, '') AS INT64) as capacidade,
+        chave_cad_linha_turno 
+      FROM ${DATASET_TABLE}
+      ${whereStatement}
+      ${prefixoGeo} (latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0)
+    `;
+
+    const rows = runQuery_(sql);
+    return rows.map(r => ({
+      latitude: parseFloat(r[0]),
+      longitude: parseFloat(r[1]),
+      cad: r[2] || '',
+      cidade: r[3] || '',
+      bairro: r[4] || '',
+      turno: r[5] || '',
+      linha: r[6] || '',
+      capacidade: parseInt(r[7], 10) || 0,
+      chave: r[8] || ''
+    }));
+  } catch (e) {
+    console.error("Erro getDadosMapaDetalhado: " + e.message);
+    return [];
+  }
+}
+
+/***************************************
+ * FILTROS
+ ***************************************/
+function getListaDistinta(colunaNome) {
+  try {
+    const colunasPermitidas = ['col_1', 'col_20', 'col_14', 'Regional', 'col_10', 'col_9'];
+    if (!colunasPermitidas.includes(colunaNome)) return [];
+
+    const sql = `
+      SELECT DISTINCT ${colunaNome}
+      FROM ${DATASET_TABLE}
+      WHERE ${colunaNome} IS NOT NULL
+      ORDER BY ${colunaNome} ASC
+    `;
+
+    const rows = runQuery_(sql);
+    return rows.map(r => r[0]).filter(Boolean);
+  } catch (e) {
+    console.error("Erro getListaDistinta(" + colunaNome + "): " + e.message);
+    return [];
+  }
+}
+
+/***************************************
+ * AUXILIARES
+ ***************************************/
+function esc(v) {
+  if (v === null || v === undefined) return '';
+  return String(v).replace(/'/g, "\\'");
+}
+
+function construirWhere(filtros) {
+  const clauses = [];
+  filtros = filtros || {};
+
+  if (filtros.regional) clauses.push(`Regional = '${esc(filtros.regional)}'`);
+  if (filtros.cidade) clauses.push(`col_10 = '${esc(filtros.cidade)}'`);
+  if (filtros.bairro) clauses.push(`col_9 = '${esc(filtros.bairro)}'`);
+  if (filtros.cad) clauses.push(`col_1 = '${esc(filtros.cad)}'`);
+  if (filtros.linha) clauses.push(`col_20 = '${esc(filtros.linha)}'`);
+  if (filtros.turno) clauses.push(`col_14 = '${esc(filtros.turno)}'`);
+
+  return clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+}
+
+function runQuery_(sql) {
+  const result = BigQuery.Jobs.query(
+    { query: sql, useLegacySql: false },
+    EXECUTOR_PROJECT_ID
+  );
+  if (!result.rows) return [];
+  return result.rows.map(row => row.f.map(c => c.v));
+}
+
+/*****
+ * SLA E CANDIDATOS
+ */
+// O GRANDE SEGREDO: Em vez de montar objetos pesados, mandamos um pacote "Zipado" em matriz
+function formatBqResults(queryResults) {
+  if (!queryResults.schema || !queryResults.schema.fields || !queryResults.rows) return { headers: [], data: [] };
+  var headers = queryResults.schema.fields.map(function(field) { return field.name; });
+  var data = queryResults.rows.map(function(row) {
+    return row.f.map(function(col) { return col.v; });
+  });
+  return { headers: headers, data: data };
+}
+
+function getSlaData() {
+  console.log("Iniciando getSlaData");
+  var projectId = 'meli-sbox'; 
+  var query = 'SELECT * FROM `meli-sbox.PEOPLEOPS.VW_SLA_ROTEIRIZACAO`'; 
+  
+  try {
+    var token = getServiceAccountToken();
+    var url = 'https://bigquery.googleapis.com/bigquery/v2/projects/' + projectId + '/queries';
+    // maxResults 50000 garante que ele não corte os dados no meio
+    var payload = { "query": query, "useLegacySql": false, "maxResults": 50000 };
+    var options = { "method": "post", "contentType": "application/json", "headers": { "Authorization": "Bearer " + token }, "payload": JSON.stringify(payload), "muteHttpExceptions": true };
+    
+    var response = UrlFetchApp.fetch(url, options);
+    var result = JSON.parse(response.getContentText());
+    
+    if (response.getResponseCode() !== 200) return JSON.stringify({ error: result.error.message });
+    var resultado = JSON.stringify(formatBqResults(result));
+    console.log("Resultado : " + resultado) ;
+    console.log("Finalizando getSlaData");
+    return resultado;
+  } catch (e) {
+    console.error("Finalizando getSlaData com erro");
+    console.error("Erro: " +  e.toString());
+    return JSON.stringify({ error: e.toString() });
+  }
+}
+
+
+function getOcupacaoData() {
+  console.log("Iniciando getOcupacaoData");
+  var projectId = 'meli-sbox'; 
+  var query = 'SELECT col_1 as cad, Regional, col_14 as turno, col_10 as cidade, col_9 as bairro, col_20 as linha, col_22 as capacidade, latitude, longitude,ocupacao_porcent, chave_cad_linha_turno FROM `meli-sbox.PEOPLEOPS.HeadCount_Ativos_Geolocalizado` WHERE latitude IS NOT NULL and CAST(col_22 AS INT64) >0'; 
+  
+  try {
+    var token = getServiceAccountToken();
+    var url = 'https://bigquery.googleapis.com/bigquery/v2/projects/' + projectId + '/queries';
+    var payload = { "query": query, "useLegacySql": false, "maxResults": 50000 };
+    var options = { "method": "post", "contentType": "application/json", "headers": { "Authorization": "Bearer " + token }, "payload": JSON.stringify(payload), "muteHttpExceptions": true };
+    
+    var response = UrlFetchApp.fetch(url, options);
+    var result = JSON.parse(response.getContentText());
+    
+    if (response.getResponseCode() !== 200) return JSON.stringify({ error: result.error.message });
+    var resultado = JSON.stringify(formatBqResults(result));
+    console.log("Resultado : " + resultado) ;
+    console.log("Finalizando getOcupacaoData");
+    return resultado;
+  } catch (e) {
+    console.error("Finalizando getOcupacaoData com erro");
+    console.error("Erro: " +  e.toString());
+    return JSON.stringify({ error: e.toString() });
+  }
+}
+
+// =========================================================
+// NOVO MOTOR: BUSCA DE CANDIDATOS UNIFICADA (UNPIVOT + EMI)
+// =========================================================
+function getCandidatosData() {
+  try {
+    var ssId = '1Y0vSg4fnKTP2VeAz6CLmz7tLXfEX8_hkBo69c-tZ64M';
+    var ss = SpreadsheetApp.openById(ssId);
+    
+    var wsUnpivot = ss.getSheetByName('BASE_UNPIVOT');
+    var wsEmi = ss.getSheetByName('EMI');
+    var result = [];
+
+    // 1. LENDO A BASE UNPIVOT (AGORA OBEDECENDO A COLUNA P)
+    if (wsUnpivot) {
+      var dataU = wsUnpivot.getDataRange().getDisplayValues();
+      var hU = dataU[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      
+      var idxDataU = hU.indexOf("DATA");
+      var idxRetornoU = hU.indexOf("HORARIO_RETORNO");
+      var idxOpU = hU.indexOf("OPERACAO_VALIDADA");
+      if(idxOpU === -1) idxOpU = hU.indexOf("QUAL_UNIDADE"); 
+      
+      var idxNomeU = hU.indexOf("NOME");
+      var idxCpfU = hU.indexOf("CPF");
+      var idxTurnoU = hU.indexOf("TURNO");
+      var idxRegionalU = hU.indexOf("REGIONAL_TA");
+
+      // Buscando a coluna STATUS exata (Coluna P)
+      var idxStatusU = -1;
+      for(var c = 0; c < hU.length; c++) {
+          if(hU[c] === "STATUS") { idxStatusU = c; break; }
+      }
+
+      for (var i = 1; i < dataU.length; i++) {
+        var row = dataU[i];
+        
+        // A REGRA DE OURO: LER APENAS A COLUNA "STATUS"
+        var statusStr = String(row[idxStatusU] || "").toUpperCase().trim();
+        
+        // Se estiver em branco ou for N. VAL., desconsidera e pula a linha
+        if (statusStr === "" || statusStr.indexOf("N. VAL") > -1) continue;
+
+        var mappedStatus = "OUTROS";
+        
+        // TRADUTOR DO SEU PRINT
+        if (statusStr === "ATENDE VT") mappedStatus = "ATENDE VT";
+        else if (statusStr === "ATENDE") mappedStatus = "APROVADO";
+        else if (statusStr === "F. REGIÃO" || statusStr === "F. REGIAO" || statusStr.indexOf("FORA") > -1) mappedStatus = "REPROVADO";
+        else if (statusStr === "FLEX") mappedStatus = "FLEX";
+        else continue; // Ignora qualquer outra sujeira que possa ter
+
+        var rawDate = row[idxRetornoU] ? row[idxRetornoU] : (row[idxDataU] || "");
+
+        result.push({
+          fonte: "PLAN", // Adicionada a Tag que você pediu
+          data: rawDate,
+          candidato: row[idxNomeU] || "--",
+          cpf: row[idxCpfU] || "",
+          operacao: row[idxOpU] || "--",
+          regional: row[idxRegionalU] || "N/A",
+          turno: row[idxTurnoU] || "N/A",
+          status_original: row[idxStatusU] || "",
+          status_macro: mappedStatus
+        });
+      }
+    }
+
+    // 2. LENDO A BASE EMI
+    if (wsEmi) {
+      var dataE = wsEmi.getDataRange().getDisplayValues();
+      var hE = dataE[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      
+      var idxDataE = hE.findIndex(function(h) { return h.indexOf("RETORNO") > -1; });
+      if(idxDataE === -1) idxDataE = hE.findIndex(function(h) { return h.indexOf("RECEBIMENTO") > -1; });
+      
+      var idxOpE = hE.findIndex(function(h) { return h === "CAD" || h.indexOf("OPERA") > -1; });
+      var idxNomeE = hE.findIndex(function(h) { return h.indexOf("CANDIDA") > -1 || h.indexOf("NOME") > -1; });
+      var idxStatusE = hE.findIndex(function(h) { return h.indexOf("STATUS FRETADO") > -1 || h === "STATUS"; });
+
+      for (var j = 1; j < dataE.length; j++) {
+        var rowE = dataE[j];
+        var statusStrE = String(rowE[idxStatusE] || "").toUpperCase().trim();
+        var mappedStatusE = "OUTROS";
+        
+        if (statusStrE === "SIM") mappedStatusE = "APROVADO";
+        else if (statusStrE === "NÃO" || statusStrE === "NAO") mappedStatusE = "REPROVADO";
+        else continue;
+
+        var rawDateE = rowE[idxDataE] || "";
+
+        result.push({
+          fonte: "EMI", // Tag EMI
+          data: rawDateE,
+          candidato: rowE[idxNomeE] || "--",
+          cpf: "", 
+          operacao: rowE[idxOpE] || "--",
+          regional: "N/A", 
+          turno: "N/A", 
+          status_original: rowE[idxStatusE] || "",
+          status_macro: mappedStatusE
+        });
+      }
+    }
+    
+    return JSON.stringify(result);
+  } catch(e) {
+    return JSON.stringify({error: e.toString()});
+  }
+}
+
+function debugKpiOcupacaoBackend(filtros) {
+  filtros = filtros || {};
+  const where = construirWhereDebug(filtros); // helper abaixo
+  const projectId = 'meli-sbox';
+
+  const sql = `
+    WITH base AS (
+      SELECT
+        TRIM(col_1) AS cad,
+        TRIM(col_20) AS linha,
+        TRIM(col_14) AS turno,
+        SAFE_CAST(col_22 AS INT64) AS capacidade
+      FROM \`meli-sbox.PEOPLEOPS.HeadCount_Ativos_Geolocalizado\`
+      ${where}
+      AND latitude IS NOT NULL
+      AND SAFE_CAST(col_22 AS INT64) > 0
+      AND TRIM(col_20) != ''
+    ),
+
+    por_linha AS (
+      SELECT
+        cad,
+        linha,
+        COUNT(*) AS passageiros,
+        MAX(capacidade) AS capacidade_linha,
+        ROUND(SAFE_DIVIDE(COUNT(*), MAX(capacidade)) * 100, 2) AS ocup_linha_pct
+      FROM base
+      GROUP BY cad, linha
+    )
+
+    SELECT
+      (SELECT COUNT(*) FROM base) AS total_registros,
+      (SELECT COUNT(*) FROM por_linha) AS total_linhas_unicas,
+      (SELECT SUM(passageiros) FROM por_linha) AS total_passageiros,
+      (SELECT SUM(capacidade_linha) FROM por_linha) AS capacidade_total,
+      ROUND(
+        SAFE_DIVIDE(
+          (SELECT SUM(passageiros) FROM por_linha),
+          (SELECT SUM(capacidade_linha) FROM por_linha)
+        ) * 100, 2
+      ) AS ocupacao_global_pct
+  `;
+
+  try {
+    const token = getServiceAccountToken();
+    const url = 'https://bigquery.googleapis.com/bigquery/v2/projects/' + projectId + '/queries';
+    const payload = { query: sql, useLegacySql: false };
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + token },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const result = JSON.parse(response.getContentText());
+
+    if (response.getResponseCode() !== 200) {
+      console.error('[DEBUG KPI] Erro query resumo: ' + JSON.stringify(result));
+      return { error: result?.error?.message || 'Erro SQL resumo' };
+    }
+
+    const r = result.rows?.[0]?.f || [];
+    const resumo = {
+      totalRegistros: Number(r[0]?.v || 0),
+      totalLinhasUnicas: Number(r[1]?.v || 0),
+      totalPassageiros: Number(r[2]?.v || 0),
+      capacidadeTotal: Number(r[3]?.v || 0),
+      ocupacaoGlobalPct: Number(r[4]?.v || 0)
+    };
+
+    console.log('[DEBUG KPI] filtros=' + JSON.stringify(filtros));
+    console.log('[DEBUG KPI] resumo=' + JSON.stringify(resumo));
+
+    // Top 15 linhas para auditoria
+    const sqlTop = `
+      WITH base AS (
+        SELECT
+          TRIM(col_1) AS cad,
+          TRIM(col_20) AS linha,
+          SAFE_CAST(col_22 AS INT64) AS capacidade
+        FROM \`meli-sbox.PEOPLEOPS.HeadCount_Ativos_Geolocalizado\`
+        ${where}
+        AND latitude IS NOT NULL
+        AND SAFE_CAST(col_22 AS INT64) > 0
+        AND TRIM(col_20) != ''
+      )
+      SELECT
+        cad, linha,
+        COUNT(*) AS passageiros,
+        MAX(capacidade) AS capacidade_linha,
+        ROUND(SAFE_DIVIDE(COUNT(*), MAX(capacidade)) * 100, 2) AS ocup_pct
+      FROM base
+      GROUP BY cad, linha
+      ORDER BY passageiros DESC
+      LIMIT 15
+    `;
+
+    const respTop = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + token },
+      payload: JSON.stringify({ query: sqlTop, useLegacySql: false }),
+      muteHttpExceptions: true
+    });
+
+    const resultTop = JSON.parse(respTop.getContentText());
+    if (respTop.getResponseCode() === 200 && resultTop.rows) {
+      console.log('[DEBUG KPI] TOP LINHAS (cad | linha | pax | cap | ocup)');
+      resultTop.rows.forEach(row => {
+        const f = row.f;
+        console.log(`${f[0].v} | ${f[1].v} | ${f[2].v} | ${f[3].v} | ${f[4].v}%`);
+      });
+    } else {
+      console.warn('[DEBUG KPI] Não conseguiu obter TOP linhas');
+    }
+
+    return { ok: true, resumo };
+
+  } catch (e) {
+    console.error('[DEBUG KPI] Exceção: ' + e.message);
+    return { error: e.message };
+  }
+}
+
+function construirWhereDebug(filtros) {
+  let clauses = ['WHERE 1=1'];
+
+  if (filtros.regional) clauses.push(`AND Regional = '${String(filtros.regional).replace(/'/g, "\\'")}'`);
+  if (filtros.cad) clauses.push(`AND col_1 = '${String(filtros.cad).replace(/'/g, "\\'")}'`);
+  if (filtros.turno) clauses.push(`AND col_14 = '${String(filtros.turno).replace(/'/g, "\\'")}'`);
+  if (filtros.cidade) clauses.push(`AND col_10 = '${String(filtros.cidade).replace(/'/g, "\\'")}'`);
+  if (filtros.bairro) clauses.push(`AND col_9 = '${String(filtros.bairro).replace(/'/g, "\\'")}'`);
+  if (filtros.linha) clauses.push(`AND col_20 = '${String(filtros.linha).replace(/'/g, "\\'")}'`);
+
+  return clauses.join('\n');
+}
+
+function getOcupacaoKpiCorreta(filtros) {
+  filtros = filtros || {};
+  const where = construirWhereDebug(filtros); // se já tiver helper
+  const projectId = 'meli-sbox';
+
+  const query = `
+    WITH base AS (
+      SELECT
+        TRIM(col_1) AS cad,
+        TRIM(col_20) AS linha,
+        SAFE_CAST(col_22 AS INT64) AS capacidade
+      FROM \`meli-sbox.PEOPLEOPS.HeadCount_Ativos_Geolocalizado\`
+      ${where}
+      AND latitude IS NOT NULL
+      AND SAFE_CAST(col_22 AS INT64) > 0
+      AND TRIM(col_20) != ''
+    ),
+    por_linha AS (
+      SELECT
+        cad,
+        linha,
+        COUNT(*) AS passageiros,
+        MAX(capacidade) AS capacidade_linha
+      FROM base
+      GROUP BY cad, linha
+    )
+    SELECT
+      SUM(passageiros) AS usuarios,
+      SUM(capacidade_linha) AS capacidade_total,
+      ROUND(SAFE_DIVIDE(SUM(passageiros), SUM(capacidade_linha)) * 100, 2) AS ocupacao_pct
+    FROM por_linha
+  `;
+
+  try {
+    const token = getServiceAccountToken();
+    const url = 'https://bigquery.googleapis.com/bigquery/v2/projects/' + projectId + '/queries';
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + token },
+      payload: JSON.stringify({ query, useLegacySql: false }),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const result = JSON.parse(response.getContentText());
+
+    if (response.getResponseCode() !== 200) {
+      return { error: result?.error?.message || 'Erro SQL' };
+    }
+
+    const f = result.rows?.[0]?.f || [];
+    return {
+      usuarios: Number(f[0]?.v || 0),
+      capacidadeTotal: Number(f[1]?.v || 0),
+      ocupacaoMedia: Number(f[2]?.v || 0)
+    };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+
+function teste(){
+    debugKpiOcupacaoBackend({ cad: 'BA01',linha: 'T1-01'});
+    console.log("===========================================")
+    getOcupacaoKpiCorreta({ cad: 'BA01',linha: 'T1-01'});
+}

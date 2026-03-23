@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aprovação de Candidatos - ML</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+  <style>
+    :root {
+      --bg-color: #F4F6F9; --sidebar-bg: #1A1A2E; --sidebar-text: #A0AEC0;
+      --card-bg: #FFFFFF; --text-main: #1A202C; --text-muted: #718096;
+      --border-color: #E2E8F0; --hover-bg: #F7FAFC;
+      --ml-yellow: #FFF159; --success: #00A650; --warning: #FF7733; --danger: #E32C2B; --ml-blue: #009EE3;
+      --success-alt: #059669; --danger-dark: #9B2C2C; --alert-orange: #DD6B20; --teal-vt: #319795; --purple-unique: #805AD5;
+      --border-radius: 12px; --card-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    }
+    body.dark-mode {
+      --bg-color: #0F172A; --sidebar-bg: #0B0F19; --sidebar-text: #718096;
+      --card-bg: #1E293B; --text-main: #F7FAFC; --text-muted: #A0AEC0;
+      --border-color: #334155; --hover-bg: #2D3748; --card-shadow: 0 6px 25px rgba(0,0,0,0.4);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s, border-color 0.3s, transform 0.2s, box-shadow 0.2s; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 10px; }
+    body { background-color: var(--bg-color); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+    /* MODO COMANDO */
+    body.kiosk-mode .sidebar { display: none !important; }
+    body.kiosk-mode .top-nav-bar { display: none !important; }
+    body.kiosk-mode .main-content { padding: 24px !important; }
+
+    #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.4s ease, visibility 0.4s; }
+    .spinner-ml { width: 48px; height: 48px; border: 4px solid var(--border-color); border-top: 4px solid var(--ml-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+    .skeleton { background: var(--border-color); background-image: linear-gradient(to right, var(--border-color) 0%, var(--hover-bg) 20%, var(--border-color) 40%, var(--border-color) 100%); background-repeat: no-repeat; background-size: 1000px 100%; animation: shimmer 1.5s infinite linear; color: transparent !important; border-radius: 4px; display: inline-block; min-width: 60px; min-height: 24px; }
+    .skeleton * { visibility: hidden; }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--success); color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 9999; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    .sidebar { width: 260px; background-color: var(--sidebar-bg); color: white; display: flex; flex-direction: column; z-index: 10000; box-shadow: 4px 0 15px rgba(0,0,0,0.1); position: relative; }
+    .logo-container { padding: 30px 24px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+    .logo-badge { background-color: var(--ml-yellow); color: #000; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-size: 14px; letter-spacing: -0.5px; }
+    .nav-btn { background: none; border: none; color: var(--sidebar-text); width: 100%; text-align: left; padding: 16px 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 14px; position: relative; border-radius: 0 20px 20px 0; margin-right: 12px; width: calc(100% - 12px); text-decoration: none;}
+    .nav-btn:hover { color: white; background-color: rgba(255,255,255,0.03); }
+    .nav-btn.active { color: var(--ml-yellow); background-color: rgba(255, 241, 89, 0.05); }
+    .nav-btn.active::before { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: var(--ml-yellow); border-radius: 0 4px 4px 0; }
+    .sidebar-footer { margin-top: auto; padding: 24px; font-size: 11px; color: rgba(255,255,255,0.4); border-top: 1px solid rgba(255,255,255,0.05); }
+
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 0 40px 40px 40px; position: relative; scroll-behavior: smooth;}
+    .top-nav-bar { display: flex; justify-content: flex-end; padding: 16px 0; margin-bottom: 8px; gap: 16px; align-items: center; border-bottom: 1px solid var(--border-color); position: relative; z-index: 2500; }
+    .top-icon-btn { position: relative; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s;}
+    .top-icon-btn:hover { color: var(--text-main); border-color: var(--text-muted); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08);}
+
+    .header-block { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; position: relative; z-index: 10; }
+    .header-titles h1 { font-size: 32px; font-weight: 800; letter-spacing: -1px; color: var(--text-main); line-height: 1.1; }
+    .header-titles p { color: var(--text-muted); font-size: 14px; margin-top: 6px; }
+    .action-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end;}
+    .btn-outline { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; box-shadow: var(--card-shadow); transition: 0.2s; }
+    .btn-outline:hover { background: var(--hover-bg); transform: translateY(-2px); }
+    .btn-dark { background: #1A202C; color: white; border: 1px solid #1A202C; padding: 10px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; transition: 0.2s; box-shadow: var(--card-shadow); }
+    .btn-dark:hover { background: #2D3748; transform: translateY(-2px); }
+    
+    .active-filters-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; margin-bottom: 20px;}
+    .filter-tag { background: rgba(0, 158, 227, 0.1); color: var(--ml-blue); border: 1px solid rgba(0, 158, 227, 0.3); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
+    .filter-tag:hover { background: rgba(227, 44, 43, 0.1); color: var(--danger); border-color: rgba(227, 44, 43, 0.3); cursor: pointer;}
+    .filter-tag span { font-size: 14px; pointer-events: none;}
+
+    .master-toggle-container { display: flex; justify-content: center; margin-bottom: 32px; position: relative; z-index: 10;}
+    .master-pills { display: flex; gap: 4px; background: var(--card-bg); border-radius: 30px; padding: 6px; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); }
+    .master-btn { padding: 10px 24px; border-radius: 24px; font-size: 14px; font-weight: 700; color: var(--text-muted); cursor: pointer; border: none; background: transparent; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 8px;}
+    .master-btn:hover { color: var(--text-main); }
+    .master-btn.active { background: var(--text-main); color: var(--card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+
+    .interactive-card { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease; cursor: pointer; }
+    .interactive-card:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 15px 35px rgba(0,0,0,0.08); border-color: var(--ml-blue); z-index: 10;}
+    body.dark-mode .interactive-card:hover { box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+
+    .funil-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 32px; position: relative; z-index: 5;}
+    .kpi-card { background: var(--card-bg); padding: 20px 16px; border-radius: var(--border-radius); box-shadow: var(--card-shadow); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; position: relative; }
+    .kpi-card.b-blue { border-bottom: 4px solid var(--ml-blue); }
+    .kpi-card.b-purple { border-bottom: 4px solid var(--purple-unique); }
+    .kpi-card.b-green { border-bottom: 4px solid var(--success); }
+    .kpi-card.b-teal { border-bottom: 4px solid var(--teal-vt); }
+    .kpi-card.b-orange { border-bottom: 4px solid var(--warning); }
+    .kpi-card.b-red { border-bottom: 4px solid var(--danger); }
+    
+    .kpi-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 26px; font-weight: 800; color: var(--text-main); letter-spacing: -1px; }
+    .kpi-subtitle { font-size: 11px; color: var(--text-muted); font-weight: 500; line-height: 1.2;}
+
+    .insights-section { background: var(--card-bg); padding: 24px; border-radius: var(--border-radius); box-shadow: var(--card-shadow); border: 1px solid var(--border-color); margin-bottom: 32px; position: relative; z-index: 3; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 12px; }
+    .section-header-left { display: flex; align-items: center; gap: 8px; }
+    .section-header h2 { font-size: 18px; font-weight: 800; color: var(--text-main); margin: 0;}
+    .section-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+    
+    .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .insight-box { padding: 16px 20px; border-radius: 8px; display: flex; align-items: center; gap: 16px; cursor: pointer; }
+    .insight-box.warning { background: rgba(221, 107, 32, 0.1); border: 1px solid rgba(221, 107, 32, 0.3); }
+    .insight-box.danger { background: rgba(229, 62, 62, 0.1); border: 1px solid rgba(229, 62, 62, 0.3); }
+    .insight-box.info { background: rgba(49, 130, 206, 0.1); border: 1px solid rgba(49, 130, 206, 0.3); }
+    .insight-box.success { background: rgba(56, 161, 105, 0.1); border: 1px solid rgba(56, 161, 105, 0.3); }
+    .insight-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;}
+    .warning .insight-icon { background: #DD6B20; }
+    .danger .insight-icon { background: #E53E3E; }
+    .info .insight-icon { background: #3182CE; }
+    .success .insight-icon { background: #38A169; }
+    .insight-text h3 { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+    .insight-text p { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+    .chart-section { background: var(--card-bg); padding: 24px; border-radius: var(--border-radius); box-shadow: var(--card-shadow); border: 1px solid var(--border-color); margin-bottom: 32px; position: relative; z-index: 2; }
+    .chart-wrapper { position: relative; height: 350px; width: 100%; margin-top: 20px; }
+
+    .table-section { background: var(--card-bg); padding: 24px; border-radius: var(--border-radius); box-shadow: var(--card-shadow); border: 1px solid var(--border-color); margin-bottom: 32px; position: relative; z-index: 1;}
+    .table-header-flex { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;}
+    
+    .tabs-pills { display: flex; gap: 8px; background: var(--hover-bg); border-radius: 24px; padding: 4px; width: fit-content; border: 1px solid var(--border-color); flex-wrap: wrap;}
+    .tab-pill { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border: none; background: transparent; transition: 0.2s; }
+    .tab-pill:hover { color: var(--text-main); }
+    .tab-pill.active { background: var(--ml-yellow); color: #1A202C; }
+
+    .search-box { position: relative; width: 320px; }
+    .search-box input { width: 100%; padding: 10px 16px 10px 40px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; outline: none; background: var(--hover-bg); color: var(--text-main); transition: 0.2s;}
+    .search-box input:focus { border-color: var(--ml-blue); background: var(--card-bg); box-shadow: 0 0 0 3px rgba(0, 158, 227, 0.1); }
+    .search-box .material-symbols-outlined { position: absolute; left: 12px; top: 10px; color: var(--text-muted); font-size: 20px; }
+
+    .data-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; }
+    .data-table th { padding: 16px; border-bottom: 2px solid var(--border-color); color: var(--text-main); font-weight: 700; font-size: 13px; position: sticky; top: 0; background: var(--card-bg); z-index: 10; cursor: pointer; }
+    .data-table th:hover { color: var(--ml-blue); }
+    .data-table td { padding: 16px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 14px; font-weight: 500; }
+    .data-table tr:hover td { background-color: var(--hover-bg); cursor: pointer; }
+    .td-dark { color: var(--text-main) !important; font-weight: 600 !important; }
+    
+    .status-label { font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .s-green { color: var(--success); background: rgba(0, 166, 80, 0.1); border: 1px solid rgba(0, 166, 80, 0.2);}
+    .s-teal { color: var(--teal-vt); background: rgba(49, 151, 149, 0.1); border: 1px solid rgba(49, 151, 149, 0.2);}
+    .s-orange { color: var(--warning); background: rgba(221, 107, 32, 0.1); border: 1px solid rgba(221, 107, 32, 0.2);}
+    .s-red { color: var(--danger); background: rgba(227, 44, 43, 0.1); border: 1px solid rgba(227, 44, 43, 0.2);}
+    .s-gray { color: var(--text-muted); background: var(--hover-bg); border: 1px solid var(--border-color);}
+
+    .pagination { display: flex; justify-content: flex-end; align-items: center; padding-top: 20px; gap: 16px; border-top: 1px solid var(--border-color); margin-top: 16px; }
+    .page-info { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    .page-controls { display: flex; gap: 8px; }
+    .page-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 36px; height: 36px; border-radius: 8px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+    .page-btn:hover:not(:disabled) { background: var(--hover-bg); border-color: var(--text-muted); }
+    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .filter-drawer { position: fixed; top: 0; right: -400px; width: 380px; height: 100vh; background: var(--card-bg); box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 3000; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; border-left: 1px solid var(--border-color);}
+    .filter-drawer.open { right: 0; }
+    .filter-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2999; display: none; opacity: 0; backdrop-filter: blur(2px); transition: opacity 0.3s; }
+    .filter-overlay.open { display: block; opacity: 1; }
+    .drawer-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--hover-bg); }
+    .drawer-header h2 { font-size: 18px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+    .btn-close { background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; transition: 0.2s;}
+    .btn-close:hover { color: var(--danger); transform: scale(1.1);}
+    .drawer-body { padding: 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+    .filter-group { display: flex; flex-direction: column; gap: 8px; }
+    .filter-group label { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+    .filter-group input[type="date"] { padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background: var(--hover-bg); color: var(--text-main); cursor: pointer; outline: none; transition: 0.2s;}
+    .filter-group input[type="date"]:focus { border-color: var(--ml-blue); background: var(--card-bg); }
+    .multi-select-box { max-height: 140px; overflow-y: auto; border: 1px solid var(--border-color); background: var(--hover-bg); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .multi-select-box::-webkit-scrollbar { width: 4px; }
+    .check-label { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-main); padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: 500;}
+    .check-label:hover { background: var(--card-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .check-label input { accent-color: var(--ml-blue); width: 16px; height: 16px; cursor: pointer; }
+    .drawer-footer { padding: 24px; border-top: 1px solid var(--border-color); display: flex; gap: 12px; }
+    .drawer-footer button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s;}
+    .btn-clear { background: var(--hover-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-clear:hover { background: var(--border-color); }
+    .btn-apply { background: var(--ml-yellow); color: #1A202C; }
+    .btn-apply:hover { filter: brightness(0.95); transform: translateY(-2px); }
+    .date-row { display: flex; gap: 12px; }
+    .date-row .filter-group { flex: 1; }
+
+  </style>
+</head>
+<body>
+
+  <div id="page-loader">
+    <div class="spinner-ml"></div>
+    <div class="loader-text">Consolidando Base Mestre...</div>
+  </div>
+
+  <div id="toast" class="toast">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span id="toast-msg">Mensagem copiada!</span>
+  </div>
+
+  <div class="filter-overlay" id="filterOverlay" onclick="toggleFilters()"></div>
+  <div class="filter-drawer" id="filterDrawer">
+    <div class="drawer-header">
+      <h2><span class="material-symbols-outlined">tune</span> Filtros Globais</h2>
+      <button class="btn-close" onclick="toggleFilters()">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <div class="date-row">
+        <div class="filter-group"><label>Data Inicial</label><input type="date" id="f-data-inicio"></div>
+        <div class="filter-group"><label>Data Final</label><input type="date" id="f-data-fim"></div>
+      </div>
+      <div class="filter-group">
+        <label>Regional</label>
+        <div class="multi-select-box" id="list-regional"></div>
+      </div>
+      <div class="filter-group">
+        <label>Operação (CAD)</label>
+        <div class="multi-select-box" id="list-cad"></div>
+      </div>
+      <div class="filter-group">
+        <label>Turno</label>
+        <div class="multi-select-box" id="list-turno"></div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn-clear" onclick="clearFilters()">Limpar Tudo</button>
+      <button class="btn-apply" onclick="applyFilters()">Aplicar Filtros</button>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="logo-container">
+      <div class="logo-badge">ML</div>
+      <div>
+        <div style="font-weight: 800; font-size: 16px; letter-spacing: -0.5px;">Mercado Livre</div>
+        <div style="font-size: 12px; color: rgba(255,255,255,0.6); font-weight: 500;">Dashboard Fretados</div>
+      </div>
+    </div>
+    
+    <!--<a href="#" id="link-ocupacao" class="nav-btn" onclick="navigateSmooth(this.href)"> -->
+    <a id="nav-fretado" href="<?= baseURL ?>?page=Ocupacao" class="nav-btn">  
+      <span class="material-symbols-outlined">directions_bus</span> Ocupação Fretados
+    </a>
+    <!--<a href="#" id="link-sla" class="nav-btn" onclick="navigateSmooth(this.href)">-->
+    <a id="nav-SLA" class="nav-btn" href="<?= baseURL ?>?page=SLA_Validacao" >
+      <span class="material-symbols-outlined">assignment_turned_in</span> Validações SLA
+    </a>
+    <!--<a href="#" class="nav-btn active" onclick="event.preventDefault();"> -->
+    <a id="nav-avalicao" class="nav-btn active mb-2" href="<?= baseURL ?>?page=SLA_Candidatos">  
+      <span class="material-symbols-outlined">how_to_reg</span> Aprovação Candidatos
+    </a>
+    <div class="sidebar-footer" id="sidebar-last-updated">Última atualização<br>--</div>
+  </aside>
+
+  <main class="main-content">
+    
+    <div class="top-nav-bar">
+      <div class="top-icon-btn" onclick="toggleKioskMode()" title="Modo Comando (Tela Cheia)">
+        <span class="material-symbols-outlined" id="kiosk-icon">fullscreen</span>
+      </div>
+      <div class="top-icon-btn" onclick="toggleGlobalTheme()" title="Alternar Tema Claro/Escuro">
+        <span class="material-symbols-outlined" id="global-theme-icon">light_mode</span>
+      </div>
+    </div>
+
+    <div class="header-block">
+      <div class="header-titles">
+        <h1 style="display:flex; align-items:center; gap:8px;"><span class="material-symbols-outlined" style="font-size:32px; color:var(--ml-blue);">filter_alt</span> Aprovação de Candidatos</h1>
+        <p>Funil de conversão geográfica (Base Unificada UNPIVOT + EMI)</p>
+        <div id="active-filters" class="active-filters-tags"></div>
+      </div>
+      <div class="action-group">
+        <button class="btn-outline" onclick="generateExecutiveReport()" title="Copia um resumo inteligente para WhatsApp"><span class="material-symbols-outlined" style="font-size: 18px; color: var(--success);">smart_toy</span> Resumo P/ Liderança</button>
+        <button class="btn-outline" onclick="exportCandCSV()"><span class="material-symbols-outlined" style="font-size: 18px;">download</span> Exportar Base</button>
+        <button class="btn-dark" onclick="toggleFilters()"><span class="material-symbols-outlined" style="font-size: 18px;">filter_alt</span> Filtros Avançados</button>
+      </div>
+    </div>
+
+    <div class="master-toggle-container">
+        <div class="master-pills">
+            <button class="master-btn active" id="btn-view-total" onclick="switchViewMode('TOTAL')">
+                <span class="material-symbols-outlined">format_list_bulleted</span> Todas as Validações
+            </button>
+            <button class="master-btn" id="btn-view-unique" onclick="switchViewMode('UNIQUE')">
+                <span class="material-symbols-outlined">person</span> Candidatos Únicos (Deduplicado)
+            </button>
+        </div>
+    </div>
+
+    <div class="funil-grid">
+      <div class="kpi-card b-blue interactive-card" onclick="quickFilterStatus('ALL'); document.getElementById('tabela-ancora').scrollIntoView({behavior:'smooth'});">
+        <div class="kpi-title" id="lbl-kpi-total">Validações Totais</div>
+        <div class="kpi-value skeleton" id="kpi-cand-val">--</div>
+        <div class="kpi-subtitle" id="sub-kpi-total">registros em base</div>
+      </div>
+      <div class="kpi-card b-purple interactive-card">
+        <div class="kpi-title">Candidatos Únicos</div>
+        <div class="kpi-value skeleton" id="kpi-cand-unicos" style="color: var(--purple-unique);">--</div>
+        <div class="kpi-subtitle">sem duplicidade de CPF</div>
+      </div>
+      <div class="kpi-card b-green interactive-card" onclick="quickFilterStatus('APROVADO'); document.getElementById('tabela-ancora').scrollIntoView({behavior:'smooth'});">
+        <div class="kpi-title">Aprovados</div>
+        <div class="kpi-value skeleton" id="kpi-cand-aprov" style="color: var(--success);">--</div>
+        <div class="kpi-subtitle">atende sem vt</div>
+      </div>
+      <div class="kpi-card b-teal interactive-card" onclick="quickFilterStatus('ATENDE VT'); document.getElementById('tabela-ancora').scrollIntoView({behavior:'smooth'});">
+        <div class="kpi-title">Atende VT</div>
+        <div class="kpi-value skeleton" id="kpi-cand-vt" style="color: var(--teal-vt);">--</div>
+        <div class="kpi-subtitle">aprovado com vt</div>
+      </div>
+      <div class="kpi-card b-orange interactive-card" onclick="quickFilterStatus('FLEX'); document.getElementById('tabela-ancora').scrollIntoView({behavior:'smooth'});">
+        <div class="kpi-title">Flex (Salvamento)</div>
+        <div class="kpi-value skeleton" id="kpi-cand-flex" style="color: var(--alert-orange);">--</div>
+        <div class="kpi-subtitle">atendidos com flexibilidade</div>
+      </div>
+      <div class="kpi-card b-red interactive-card" onclick="quickFilterStatus('REPROVADO'); document.getElementById('tabela-ancora').scrollIntoView({behavior:'smooth'});">
+        <div class="kpi-title">Fora de Região</div>
+        <div class="kpi-value skeleton" id="kpi-cand-reprov" style="color: var(--danger);">--</div>
+        <div class="kpi-subtitle">demanda perdida</div>
+      </div>
+    </div>
+
+    <div class="insights-section">
+      <div class="section-header">
+        <div class="section-header-left">
+            <span class="material-symbols-outlined" style="color: #D69E2E;">smart_toy</span>
+            <h2>I.A. de Conversão</h2>
+        </div>
+      </div>
+      <div class="section-desc">Análise de eficiência de roteirização</div>
+      <div class="insights-grid" id="insights-container">
+        <div class="insight-box warning interactive-card skeleton" style="width: 100%; height: 68px;"></div>
+        <div class="insight-box danger interactive-card skeleton" style="width: 100%; height: 68px;"></div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="section-header">
+        <div class="section-header-left">
+            <span class="material-symbols-outlined" style="color: var(--ml-yellow);">stacked_bar_chart</span>
+            <h2 id="chart-cand-title">Funil Diário de Conversão (Últimos 14 Dias)</h2>
+        </div>
+        <div class="tabs-pills">
+            <button class="tab-pill active" id="btn-chart-daily" onclick="toggleChartModeCand('DAILY')">Visão Diária</button>
+            <button class="tab-pill" id="btn-chart-op" onclick="toggleChartModeCand('OPERATION')">Por Operação</button>
+            <button class="tab-pill" id="btn-chart-reg" onclick="toggleChartModeCand('REGIONAL')">Por Regional</button>
+            <button class="tab-pill" id="btn-chart-turno" onclick="toggleChartModeCand('TURNO')">Por Turno</button>
+        </div>
+      </div>
+      <div class="section-desc" id="chart-cand-desc">Acompanhamento do volume de status de aprovação por dia</div>
+      <div class="chart-wrapper">
+        <canvas id="candidatosChart"></canvas>
+      </div>
+    </div>
+
+    <div class="table-section" id="tabela-ancora">
+      <div class="table-header-flex">
+        <div>
+          <h2 class="chart-title">Base de Dados Unificada</h2>
+          <div class="section-desc" style="margin-top: 4px;">Logs detalhados das validações</div>
+        </div>
+        <div class="search-box">
+          <span class="material-symbols-outlined">search</span>
+          <input type="text" id="tableSearch" placeholder="Pesquisar Candidato ou Operação..." onkeyup="searchTable()">
+        </div>
+      </div>
+      
+      <div class="tabs-pills">
+        <button class="tab-pill active" id="tab-all" onclick="filterTableTabs('ALL')">Todos</button>
+        <button class="tab-pill" id="tab-aprovados" onclick="filterTableTabs('APROVADO')">Aprovados</button>
+        <button class="tab-pill" id="tab-vt" onclick="filterTableTabs('ATENDE VT')">Atende VT</button>
+        <button class="tab-pill" id="tab-flex" onclick="filterTableTabs('FLEX')">Flex</button>
+        <button class="tab-pill" id="tab-reprovados" onclick="filterTableTabs('REPROVADO')">Fora de Região</button>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="data-table" id="dataTable">
+          <thead>
+            <tr>
+              <th onclick="sortTableDet('Candidato')">Candidato / Fonte <span class="material-symbols-outlined">swap_vert</span></th>
+              <th onclick="sortTableDet('Op')">Operação <span class="material-symbols-outlined">swap_vert</span></th>
+              <th onclick="sortTableDet('Turno')">Turno <span class="material-symbols-outlined">swap_vert</span></th>
+              <th onclick="sortTableDet('Data')">Data Retorno <span class="material-symbols-outlined">swap_vert</span></th>
+              <th>Status Original</th>
+              <th onclick="sortTableDet('Status')">Decisão <span class="material-symbols-outlined">swap_vert</span></th>
+            </tr>
+          </thead>
+          <tbody id="tickets-tbody">
+            <tr><td colspan="6" style="padding: 20px;"><div class="skeleton" style="width: 100%;"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="pagination">
+          <div class="page-info" id="page-info">Mostrando 0 a 0 de 0 registros</div>
+          <div class="page-controls">
+              <button class="page-btn" id="btn-prev" onclick="changePage(-1)"><span class="material-symbols-outlined">chevron_left</span></button>
+              <button class="page-btn" id="btn-next" onclick="changePage(1)"><span class="material-symbols-outlined">chevron_right</span></button>
+          </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    let globalData = []; 
+    let currentFilteredData = []; 
+    let currentProcessedData = []; 
+    let currentTableData = []; 
+    
+    let currentViewMode = 'TOTAL'; 
+    let currentChartModeCand = 'DAILY';
+    
+    let currentPage = 1;
+    const rowsPerPage = 50;
+    
+    let mainChart = null;
+    let currentTableTab = 'ALL';
+    let globalTheme = 'light';
+    let currentSortCol = 'Data';
+    let currentSortDir = 'desc';
+
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = "#718096"; 
+
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            let loader = document.getElementById('page-loader');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.visibility = 'hidden', 400);
+        }, 400);
+    });
+
+    document.addEventListener('fullscreenchange', (event) => {
+        const body = document.body;
+        const icon = document.getElementById('kiosk-icon');
+        if (document.fullscreenElement) { body.classList.add('kiosk-mode'); icon.innerText = 'fullscreen_exit'; } 
+        else { body.classList.remove('kiosk-mode'); icon.innerText = 'fullscreen'; setTimeout(() => { if(mainChart) mainChart.resize(); }, 300); }
+    });
+
+    function navigateSmooth(url) {
+        event.preventDefault();
+        let loader = document.getElementById('page-loader');
+        loader.style.visibility = 'visible'; loader.style.opacity = '1';
+        setTimeout(() => { window.top.location.href = url; }, 300);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      google.script.run.withSuccessHandler(function(url){
+        let btnOcupacao = document.getElementById('link-ocupacao');
+        let btnSla = document.getElementById('link-sla');
+        let btnCand = document.getElementById('link-candidatos');
+        
+        if(btnOcupacao) btnOcupacao.href = url + "?page=Index";
+        if(btnSla) btnSla.href = url + "?page=SLA";
+        if(btnCand) btnCand.href = url + "?page=Candidatos";
+      }).getAppUrl();
+      fetchData();
+    });
+
+    function toggleKioskMode() {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err => {});
+        else if (document.exitFullscreen) document.exitFullscreen();
+    }
+
+    function toggleGlobalTheme() {
+      const body = document.body;
+      const icon = document.getElementById('global-theme-icon');
+      if(globalTheme === 'light') { body.classList.add('dark-mode'); icon.innerText = 'dark_mode'; globalTheme = 'dark'; } 
+      else { body.classList.remove('dark-mode'); icon.innerText = 'light_mode'; globalTheme = 'light'; }
+      if(currentProcessedData.length > 0) renderChartCand(currentProcessedData); 
+    }
+
+    function showToast(msg) {
+        let toast = document.getElementById('toast');
+        document.getElementById('toast-msg').innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    function generateExecutiveReport() {
+        let txAprov = document.getElementById('kpi-cand-aprov').innerText;
+        let vt = document.getElementById('kpi-cand-vt').innerText;
+        let flex = document.getElementById('kpi-cand-flex').innerText;
+        let rep = document.getElementById('kpi-cand-reprov').innerText;
+        let totalVal = document.getElementById('kpi-cand-val').innerText;
+        
+        let insightCards = document.querySelectorAll('#insights-container .insight-box:not(.skeleton) h3');
+        let insightOp = insightCards.length > 0 ? insightCards[0].innerText : "Roteirização Estável";
+        let insightP = document.querySelectorAll('#insights-container .insight-box:not(.skeleton) p')[0]?.innerText || "";
+
+        let modoStr = currentViewMode === 'TOTAL' ? '*(Todas as Validações)*' : '*(Candidatos Únicos)*';
+
+        let texto = `*RESUMO - FUNIL DE ROTEIRIZAÇÃO* 🚌\n` +
+                    `_Atualizado agora_\n${modoStr}\n\n` +
+                    `📋 *Volume Analisado:* ${totalVal}\n` +
+                    `✅ *Aprovados:* ${txAprov}\n` +
+                    `🚌 *Atende VT:* ${vt}\n` +
+                    `🟠 *Salvamentos (Flex):* ${flex}\n` +
+                    `🚨 *Fora de Região:* ${rep}\n\n` +
+                    `🤖 *Insight da I.A:* ${insightOp} - ${insightP}`;
+
+        let textArea = document.createElement("textarea");
+        textArea.value = texto;
+        textArea.style.position = "fixed";  
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            let successful = document.execCommand('copy');
+            if(successful) { showToast("Resumo copiado para WhatsApp!"); } else { showToast("Erro ao copiar."); }
+        } catch (err) { showToast("Erro ao copiar."); }
+        document.body.removeChild(textArea);
+    }
+
+    function exportCandCSV() {
+        if(currentProcessedData.length === 0) return alert("Sem dados.");
+        let csv = "\uFEFFCandidato;Fonte;Operacao;Regional;Turno;Data;Status Original;Decisao Final\n";
+        currentProcessedData.forEach(r => {
+             csv += `${r.candidato};${r.fonte};${r.operacao};${r.regional};${r.turno};${r._dtDisplay};${r.status_original};${r.status_macro}\n`;
+        });
+        let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "Funil_Candidatos_Meli.csv";
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        showToast("Download da base iniciado!");
+    }
+
+    function setSkeletons() {
+      ['kpi-total', 'kpi-aprovados', 'kpi-vt', 'kpi-flex', 'kpi-reprovados', 'kpi-cand-unicos', 'kpi-cand-val'].forEach(id => {
+        let el = document.getElementById(id); if(el) { el.classList.add('skeleton'); el.innerText = '000'; }
+      });
+      document.getElementById('tickets-tbody').innerHTML = "<tr><td colspan='6' style='padding: 20px;'><div class='skeleton' style='width: 100%;'></div></td></tr>";
+    }
+
+    function animateValue(id, start, end, duration, isPercent, suffix) {
+      let obj = document.getElementById(id);
+      if(!obj) return;
+      obj.classList.remove('skeleton'); 
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); 
+        let val = progress === 1 ? end : start + (end - start) * easeProgress;
+        let finalStr = isPercent ? val.toFixed(1) + '%' : Math.floor(val).toLocaleString('pt-BR');
+        if(suffix) finalStr += suffix;
+        obj.innerHTML = finalStr;
+        if (progress < 1) window.requestAnimationFrame(step);
+      };
+      window.requestAnimationFrame(step);
+    }
+
+    function parseMeliDate(rawDate) {
+        if(!rawDate) return { iso: '9999-12-31', display: '--', timestamp: 9999999999999 };
+        let str = String(rawDate).trim();
+        let regexBR = /^(\d{2})\/(\d{2})\/(\d{4})/;
+        let matchBR = str.match(regexBR);
+        if(matchBR) {
+            let d = new Date(`${matchBR[3]}-${matchBR[2]}-${matchBR[1]}T12:00:00`);
+            return { iso: `${matchBR[3]}-${matchBR[2]}-${matchBR[1]}`, display: `${matchBR[1]}/${matchBR[2]}/${matchBR[3]}`, timestamp: d.getTime() };
+        }
+        let regexISO = /^(\d{4})-(\d{2})-(\d{2})/;
+        let matchISO = str.match(regexISO);
+        if(matchISO) {
+             let d = new Date(`${matchISO[1]}-${matchISO[2]}-${matchISO[3]}T12:00:00`);
+             return { iso: `${matchISO[1]}-${matchISO[2]}-${matchISO[3]}`, display: `${matchISO[3]}/${matchISO[2]}/${matchISO[1]}`, timestamp: d.getTime() };
+        }
+        return { iso: '1900-01-01', display: str, timestamp: 0 };
+    }
+
+    function fetchData() {
+      setSkeletons();
+      google.script.run
+        .withSuccessHandler(function(rawData) {
+          try {
+            let parsed = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+            if(parsed && parsed.error) return alert("Erro no Banco: " + parsed.error);
+            
+            globalData = [];
+            parsed.forEach(r => {
+                let dParser = parseMeliDate(r.data);
+                r._dtIso = dParser.iso;
+                r._dtDisplay = dParser.display;
+                r._dtTimestamp = dParser.timestamp;
+                globalData.push(r);
+            });
+            
+            populateFilterDropdowns(globalData);
+            applyFilters(); 
+          } catch(e) { console.error(e); }
+        })
+        .getCandidatosData();
+    }
+
+    function toggleFilters() {
+      document.getElementById('filterDrawer').classList.toggle('open');
+      document.getElementById('filterOverlay').classList.toggle('open');
+    }
+
+    function populateFilterDropdowns(data) {
+      let regionais = new Set(), cads = new Set(), turnos = new Set();
+      data.forEach(d => {
+        if(d.regional && d.regional !== 'N/A' && d.regional !== '--') regionais.add(d.regional);
+        if(d.operacao && d.operacao !== 'N/A' && d.operacao !== '--') cads.add(d.operacao);
+        if(d.turno && d.turno !== 'N/A' && d.turno !== '--') turnos.add(d.turno);
+      });
+      
+      const buildCheckboxes = (id, set, className) => {
+        let html = '';
+        Array.from(set).sort().forEach(val => { html += `<label class="check-label"><input type="checkbox" value="${val}" class="${className}"> ${val}</label>`; });
+        document.getElementById(id).innerHTML = html; 
+      };
+      buildCheckboxes('list-regional', regionais, 'chk-reg');
+      buildCheckboxes('list-cad', cads, 'chk-cad');
+      buildCheckboxes('list-turno', turnos, 'chk-tur');
+    }
+
+    function getCheckedValues(className) { return Array.from(document.querySelectorAll('.' + className + ':checked')).map(cb => cb.value); }
+    function uncheckAll(className) { document.querySelectorAll('.' + className).forEach(cb => cb.checked = false); }
+
+    function clearFilters() {
+      uncheckAll('chk-reg'); uncheckAll('chk-cad'); uncheckAll('chk-tur');
+      document.getElementById('f-data-inicio').value = ''; document.getElementById('f-data-fim').value = '';
+      document.getElementById('tableSearch').value = '';
+      applyFilters();
+    }
+
+    function generateTagHTML(label, valuesArray, clearClassFunc) {
+        if(valuesArray.length === 0) return '';
+        let displayStr = valuesArray.length <= 2 ? valuesArray.join(', ') : `${valuesArray.length} selecionados`;
+        return `<div class="filter-tag" onclick="${clearClassFunc}; applyFilters();">${label}: ${displayStr} <span class="material-symbols-outlined">close</span></div>`;
+    }
+
+    function quickFilterStatus(statusMacro) {
+        filterTableTabs(statusMacro);
+    }
+
+    function switchViewMode(mode) {
+        currentViewMode = mode;
+        document.getElementById('btn-view-total').classList.remove('active');
+        document.getElementById('btn-view-unique').classList.remove('active');
+        
+        if(mode === 'TOTAL') {
+            document.getElementById('btn-view-total').classList.add('active');
+            document.getElementById('lbl-kpi-total').innerText = 'Validações Totais';
+            document.getElementById('sub-kpi-total').innerText = 'registros da base (bruto)';
+        } else {
+            document.getElementById('btn-view-unique').classList.add('active');
+            document.getElementById('lbl-kpi-total').innerText = 'Candidatos Únicos';
+            document.getElementById('sub-kpi-total').innerText = 'Nomes deduplicados';
+        }
+        
+        processDashboard();
+    }
+
+    function deduplicateCandidates(data) {
+        let map = {};
+        let statusWeight = { 'APROVADO': 4, 'ATENDE VT': 3, 'FLEX': 2, 'REPROVADO': 1, 'OUTROS': 0 };
+
+        data.forEach(r => {
+            let key = r.candidato.toUpperCase().trim();
+            if(key === '--' || key === 'N/A' || key === '') { key = Math.random().toString(); }
+
+            if(!map[key]) {
+                map[key] = { ...r };
+            } else {
+                let currentWeight = statusWeight[map[key].status_macro] || 0;
+                let newWeight = statusWeight[r.status_macro] || 0;
+                if(newWeight > currentWeight) { map[key] = { ...r }; }
+            }
+        });
+        return Object.values(map);
+    }
+
+    function applyFilters() {
+      let fInicio = document.getElementById('f-data-inicio').value; 
+      let fFim = document.getElementById('f-data-fim').value;       
+      let fRegs = getCheckedValues('chk-reg');
+      let fCads = getCheckedValues('chk-cad');
+      let fTurs = getCheckedValues('chk-tur');
+
+      let tagsHtml = '';
+      const fmtBR = (d) => { let p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
+      if(fInicio && fFim && fInicio === fFim) tagsHtml += `<div class="filter-tag" onclick="document.getElementById('f-data-inicio').value=''; document.getElementById('f-data-fim').value=''; applyFilters();">Dia: ${fmtBR(fInicio)} <span class="material-symbols-outlined">close</span></div>`;
+      else {
+        if(fInicio && fFim) tagsHtml += `<div class="filter-tag" onclick="document.getElementById('f-data-inicio').value=''; document.getElementById('f-data-fim').value=''; applyFilters();">De ${fmtBR(fInicio)} até ${fmtBR(fFim)} <span class="material-symbols-outlined">close</span></div>`;
+        else if(fInicio) tagsHtml += `<div class="filter-tag" onclick="document.getElementById('f-data-inicio').value=''; applyFilters();">A partir de ${fmtBR(fInicio)} <span class="material-symbols-outlined">close</span></div>`;
+        else if(fFim) tagsHtml += `<div class="filter-tag" onclick="document.getElementById('f-data-fim').value=''; applyFilters();">Até ${fmtBR(fFim)} <span class="material-symbols-outlined">close</span></div>`;
+      }
+      
+      tagsHtml += generateTagHTML('Reg', fRegs, "uncheckAll('chk-reg')");
+      tagsHtml += generateTagHTML('Op', fCads, "uncheckAll('chk-cad')");
+      tagsHtml += generateTagHTML('Turno', fTurs, "uncheckAll('chk-tur')");
+      
+      document.getElementById('active-filters').innerHTML = tagsHtml;
+
+      currentFilteredData = globalData.filter(d => {
+        let passDate = true;
+        if(fInicio && d._dtIso < fInicio) passDate = false;
+        if(fFim && d._dtIso > fFim) passDate = false;
+        
+        let passReg = fRegs.length === 0 || fRegs.includes(d.regional);
+        let passCad = fCads.length === 0 || fCads.includes(d.operacao);
+        let passTur = fTurs.length === 0 || fTurs.includes(d.turno);
+        
+        return passDate && passReg && passCad && passTur;
+      });
+
+      document.getElementById('filterDrawer').classList.remove('open');
+      document.getElementById('filterOverlay').classList.remove('open');
+      processDashboard();
+    }
+
+    function processDashboard() {
+      currentProcessedData = currentViewMode === 'UNIQUE' ? deduplicateCandidates(currentFilteredData) : currentFilteredData;
+
+      if(currentProcessedData.length === 0) {
+          setSkeletons();
+          document.getElementById('insights-container').innerHTML = '<div class="insight-box info"><div class="insight-text"><p>Sem dados.</p></div></div>';
+          document.getElementById('tickets-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px;">Sem dados.</td></tr>`;
+          if(mainChart) mainChart.destroy();
+          return;
+      }
+
+      let total = currentProcessedData.length, aprov = 0, vt = 0, flex = 0, reprov = 0;
+      let opTaxas = {};
+      let uniqueSet = new Set(); 
+
+      currentProcessedData.forEach(r => {
+        if(r.candidato && r.candidato !== '--' && r.candidato !== 'N/A') uniqueSet.add(r.candidato.toUpperCase().trim()); 
+
+        if(r.status_macro === 'APROVADO') aprov++;
+        else if(r.status_macro === 'ATENDE VT') vt++;
+        else if(r.status_macro === 'FLEX') flex++;
+        else if(r.status_macro === 'REPROVADO') reprov++;
+
+        let op = r.operacao;
+        if(!opTaxas[op]) opTaxas[op] = { total: 0, sucesso: 0, reprov: 0 };
+        opTaxas[op].total++;
+        if(r.status_macro === 'APROVADO' || r.status_macro === 'ATENDE VT' || r.status_macro === 'FLEX') opTaxas[op].sucesso++;
+        else if(r.status_macro === 'REPROVADO') opTaxas[op].reprov++;
+      });
+      
+      animateValue('kpi-cand-val', 0, total, 1000, false);
+      animateValue('kpi-cand-unicos', 0, uniqueSet.size, 1000, false); 
+      animateValue('kpi-cand-aprov', 0, aprov, 1000, false);
+      animateValue('kpi-cand-vt', 0, vt, 1000, false);
+      animateValue('kpi-cand-flex', 0, flex, 1000, false);
+      animateValue('kpi-cand-reprov', 0, reprov, 1000, false);
+
+      generateInsights(opTaxas, total, aprov, vt, flex);
+      renderChartCand(currentProcessedData);
+      filterTableTabs(currentTableTab); 
+    }
+
+    function generateInsights(opTaxas, total, aprov, vt, flex) {
+        let opArray = Object.keys(opTaxas).map(k => ({nome: k, ...opTaxas[k]}));
+        opArray.forEach(o => { o.taxaRej = o.total > 0 ? (o.reprov/o.total) : 0; });
+        opArray.sort((a,b) => b.taxaRej - a.taxaRej);
+        
+        let txGlobal = total > 0 ? ((aprov+vt+flex)/total)*100 : 0;
+        
+        let html = '';
+        html += `<div class="insight-box success interactive-card"><div class="insight-icon"><span class="material-symbols-outlined">verified</span></div><div class="insight-text"><h3>Conversão de Roteirização</h3><p>Atualmente, <strong>${txGlobal.toFixed(1)}%</strong> das solicitações entram na malha.</p></div></div>`;
+        
+        let opPior = opArray.find(o => o.total > 10); 
+        if(opPior && opPior.taxaRej > 0.3) {
+            html += `<div class="insight-box danger interactive-card"><div class="insight-icon"><span class="material-symbols-outlined">explore_off</span></div><div class="insight-text"><h3>Alerta Geográfico</h3><p>A operação <strong>${opPior.nome}</strong> perde ${(opPior.taxaRej*100).toFixed(1)}% da demanda.</p></div></div>`;
+        } else {
+             html += `<div class="insight-box info interactive-card"><div class="insight-icon"><span class="material-symbols-outlined">map</span></div><div class="insight-text"><h3>Geografia Estável</h3><p>A malha absorve bem as demandas da região.</p></div></div>`;
+        }
+
+        document.getElementById('insights-container').innerHTML = html;
+    }
+
+    // ==========================================
+    // GRÁFICO (REFINADO COM TOGGLE DE VISÃO)
+    // ==========================================
+    function toggleChartModeCand(mode) {
+        currentChartModeCand = mode;
+        ['btn-chart-daily', 'btn-chart-op', 'btn-chart-reg', 'btn-chart-turno'].forEach(id => document.getElementById(id).classList.remove('active'));
+        
+        let title = "Funil Diário de Conversão (Últimos 14 Dias)";
+        let desc = "Acompanhamento do status de aprovação por dia";
+        
+        if(mode === 'DAILY') {
+            document.getElementById('btn-chart-daily').classList.add('active');
+        } else if(mode === 'OPERATION') {
+            document.getElementById('btn-chart-op').classList.add('active');
+            title = "Funil por Operação (CAD)";
+            desc = "Volume de candidatos e conversão agrupados por operação";
+        } else if(mode === 'REGIONAL') {
+            document.getElementById('btn-chart-reg').classList.add('active');
+            title = "Funil por Regional";
+            desc = "Volume de candidatos e conversão agrupados por regional";
+        } else if(mode === 'TURNO') {
+            document.getElementById('btn-chart-turno').classList.add('active');
+            title = "Funil por Turno";
+            desc = "Volume de candidatos e conversão agrupados por turno";
+        }
+        
+        document.getElementById('chart-cand-title').innerText = title;
+        document.getElementById('chart-cand-desc').innerText = desc;
+        
+        renderChartCand(currentProcessedData);
+    }
+
+    function renderChartCand(chartSourceData) {
+        const ctx = document.getElementById('candidatosChart').getContext('2d');
+        if(mainChart) mainChart.destroy();
+        
+        const isDark = globalTheme === 'dark';
+        const corTexto = isDark ? '#F7FAFC' : '#4A5568';
+        
+        let chartData = {};
+        
+        if (currentChartModeCand === 'DAILY') {
+            chartSourceData.forEach(r => {
+                let dtIso = r._dtIso !== '9999-12-31' ? r._dtIso : 'Sem Data';
+                if(dtIso === 'Sem Data') return;
+                if(!chartData[dtIso]) chartData[dtIso] = { aprov: 0, vt: 0, flex: 0, reprov: 0, total: 0 };
+                
+                chartData[dtIso].total++;
+                if(r.status_macro === 'APROVADO') chartData[dtIso].aprov++;
+                else if(r.status_macro === 'ATENDE VT') chartData[dtIso].vt++;
+                else if(r.status_macro === 'FLEX') chartData[dtIso].flex++;
+                else if(r.status_macro === 'REPROVADO') chartData[dtIso].reprov++;
+            });
+            
+            let dates = Object.keys(chartData).sort().slice(-14); 
+            let dTotal = [], dAprov = [], dVt = [], dFlex = [], dReprov = [];
+            
+            dates.forEach(d => {
+                dTotal.push(chartData[d].total);
+                dAprov.push(chartData[d].aprov);
+                dVt.push(chartData[d].vt);
+                dFlex.push(chartData[d].flex);
+                dReprov.push(chartData[d].reprov);
+            });
+
+            let labels = dates.map(d => { let p = d.split('-'); return `${p[2]}/${p[1]}`; });
+            
+            mainChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: currentViewMode === 'TOTAL' ? 'Total Analisado' : 'Total Únicos', data: dTotal, type: 'line', borderColor: isDark ? '#A0AEC0' : '#718096', backgroundColor: isDark ? '#A0AEC0' : '#718096', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 4, pointHoverRadius: 6, fill: false, order: 0 },
+                        { label: 'Aprovados', data: dAprov, backgroundColor: 'rgba(0, 166, 80, 0.4)', borderColor: '#00A650', borderWidth: 1, borderRadius: 4, maxBarThickness: 60, order: 4, stack: 'Stack 0' },
+                        { label: 'Atende VT', data: dVt, backgroundColor: 'rgba(49, 151, 149, 0.4)', borderColor: '#319795', borderWidth: 1, borderRadius: 4, maxBarThickness: 60, order: 3, stack: 'Stack 0' },
+                        { label: 'Flex', data: dFlex, backgroundColor: 'rgba(221, 107, 32, 0.4)', borderColor: '#DD6B20', borderWidth: 1, borderRadius: 4, maxBarThickness: 60, order: 2, stack: 'Stack 0' },
+                        { label: 'Fora Região', data: dReprov, backgroundColor: 'rgba(227, 44, 43, 0.4)', borderColor: '#E32C2B', borderWidth: 1, borderRadius: 4, maxBarThickness: 60, order: 1, stack: 'Stack 0' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, layout: { padding: { top: 15 } }, 
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: {color: corTexto, boxWidth: 12, padding: 15, font: { weight: 600 }} },
+                        tooltip: { backgroundColor: isDark ? '#2D3748' : '#FFF', titleColor: isDark ? '#FFF' : '#1A202C', bodyColor: isDark ? '#E2E8F0' : '#4A5568', borderColor: isDark ? '#4A5568' : '#E2E8F0', borderWidth: 1, padding: 12, cornerRadius: 8, mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false, drawBorder: false }, ticks: { color: corTexto, font: { weight: 500 } } },
+                        y: { stacked: true, beginAtZero: true, grid: { display: false, drawBorder: false }, display: false } 
+                    },
+                    onHover: (e, c) => { e.native.target.style.cursor = c[0] ? 'pointer' : 'default'; },
+                    onClick: (e, activeEls) => {
+                        if (activeEls.length > 0) {
+                            const index = activeEls[0].index; const isoDate = dates[index]; 
+                            document.getElementById('f-data-inicio').value = isoDate; document.getElementById('f-data-fim').value = isoDate; applyFilters();
+                        }
+                    }
+                }
+            });
+        } 
+        else {
+             let groupKey = '';
+             chartSourceData.forEach(r => {
+                 if (currentChartModeCand === 'OPERATION') groupKey = r.operacao;
+                 else if (currentChartModeCand === 'REGIONAL') groupKey = r.regional;
+                 else if (currentChartModeCand === 'TURNO') groupKey = r.turno;
+                 
+                 if(!groupKey || groupKey === '--' || groupKey === 'N/A') groupKey = 'Não Informado';
+                 
+                 if(!chartData[groupKey]) chartData[groupKey] = { aprov: 0, vt: 0, flex: 0, reprov: 0, total: 0 };
+                 chartData[groupKey].total++;
+                 if(r.status_macro === 'APROVADO') chartData[groupKey].aprov++;
+                 else if(r.status_macro === 'ATENDE VT') chartData[groupKey].vt++;
+                 else if(r.status_macro === 'FLEX') chartData[groupKey].flex++;
+                 else if(r.status_macro === 'REPROVADO') chartData[groupKey].reprov++;
+             });
+             
+             let keysArray = Object.keys(chartData).map(k => ({nome: k, ...chartData[k]}));
+             keysArray.sort((a,b) => b.total - a.total); 
+             if(currentChartModeCand === 'OPERATION') keysArray = keysArray.slice(0, 15);
+             
+             let labels = keysArray.map(k => k.nome);
+             let dTotal = keysArray.map(k => k.total);
+             let dAprov = keysArray.map(k => k.aprov);
+             let dVt = keysArray.map(k => k.vt);
+             let dFlex = keysArray.map(k => k.flex);
+             let dReprov = keysArray.map(k => k.reprov);
+             
+             mainChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: currentViewMode === 'TOTAL' ? 'Total Analisado' : 'Total Únicos', data: dTotal, type: 'line', borderColor: isDark ? '#A0AEC0' : '#718096', backgroundColor: isDark ? '#A0AEC0' : '#718096', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 4, pointHoverRadius: 6, fill: false, order: 0 },
+                        { label: 'Aprovados', data: dAprov, backgroundColor: 'rgba(0, 166, 80, 0.4)', borderColor: '#00A650', borderWidth: 1, borderRadius: 4, maxBarThickness: 60, order: 4, stack: 'Stack 0' },
+                        { label: 'Atende VT', data: dVt, backgroundColor: 'rgba(49, 151, 149, 0.4)', borderColor: '#319795', borderWidth: 1, borderRadius: 4, maxBarThickness: 60, order: 3, stack: 'Stack 0' },
+                        { label: 'Flex', data: dFlex, backgroundColor: 'rgba(221, 107, 32, 0.4)', borderColor: '#DD6B20', borderWidth: 1, borderRadius: 4, maxBarThickness: 60, order: 2, stack: 'Stack 0' },
+                        { label: 'Fora Região', data: dReprov, backgroundColor: 'rgba(227, 44, 43, 0.4)', borderColor: '#E32C2B', borderWidth: 1, borderRadius: 4, maxBarThickness: 60, order: 1, stack: 'Stack 0' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, layout: { padding: { top: 15 } }, 
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: {color: corTexto, boxWidth: 12, padding: 15, font: { weight: 600 }} },
+                        tooltip: { backgroundColor: isDark ? '#2D3748' : '#FFF', titleColor: isDark ? '#FFF' : '#1A202C', bodyColor: isDark ? '#E2E8F0' : '#4A5568', borderColor: isDark ? '#4A5568' : '#E2E8F0', borderWidth: 1, padding: 12, cornerRadius: 8, mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false, drawBorder: false }, ticks: { color: corTexto, font: { weight: 500 } } },
+                        y: { stacked: true, beginAtZero: true, grid: { display: false, drawBorder: false }, display: false } 
+                    },
+                    onHover: (e, c) => { e.native.target.style.cursor = c[0] ? 'pointer' : 'default'; },
+                    onClick: (e, activeEls) => {
+                        if (activeEls.length > 0) {
+                            const index = activeEls[0].index; 
+                            const clickedLabel = labels[index]; 
+                            if(currentChartModeCand === 'OPERATION') {
+                                uncheckAll('chk-cad'); let cb = document.querySelector(`.chk-cad[value="${clickedLabel}"]`); if(cb) cb.checked = true;
+                            } else if(currentChartModeCand === 'REGIONAL') {
+                                uncheckAll('chk-reg'); let cb = document.querySelector(`.chk-reg[value="${clickedLabel}"]`); if(cb) cb.checked = true;
+                            } else if(currentChartModeCand === 'TURNO') {
+                                uncheckAll('chk-tur'); let cb = document.querySelector(`.chk-tur[value="${clickedLabel}"]`); if(cb) cb.checked = true;
+                            }
+                            applyFilters();
+                            document.getElementById('tabela-ancora').scrollIntoView({behavior: 'smooth'});
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function searchTable() {
+      currentPage = 1;
+      let input = document.getElementById("tableSearch").value.toUpperCase();
+      let searchedData = currentTableData.filter(r => r.candidato.toUpperCase().includes(input) || r.operacao.toUpperCase().includes(input));
+      renderTableDet(searchedData);
+    }
+
+    function filterTableTabs(filterType) {
+        currentTableTab = filterType;
+        currentPage = 1; 
+        ['tab-all', 'tab-aprovados', 'tab-vt', 'tab-flex', 'tab-reprovados'].forEach(id => document.getElementById(id).classList.remove('active'));
+        
+        let tabId = 'tab-all';
+        if(filterType === 'APROVADO') tabId = 'tab-aprovados';
+        if(filterType === 'ATENDE VT') tabId = 'tab-vt';
+        if(filterType === 'FLEX') tabId = 'tab-flex';
+        if(filterType === 'REPROVADO') tabId = 'tab-reprovados';
+        document.getElementById(tabId).classList.add('active');
+        
+        currentTableData = currentProcessedData.filter(r => {
+            if (filterType === 'ALL') return true;
+            return r.status_macro === filterType;
+        });
+        
+        sortTableDet(currentSortCol, true, currentSortDir); 
+        document.getElementById("tableSearch").value = "";
+    }
+
+    function sortTableDet(coluna, force, forceDirection) {
+      if(!force) {
+        if (currentSortCol === coluna) { currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc'; } 
+        else { currentSortCol = coluna; currentSortDir = 'desc'; }
+      } else if (forceDirection) { currentSortCol = coluna; currentSortDir = forceDirection; }
+      
+      currentTableData.sort((a, b) => {
+        let valA, valB;
+        switch(coluna) {
+            case 'Candidato': valA = a.candidato; valB = b.candidato; break;
+            case 'Op': valA = a.operacao; valB = b.operacao; break;
+            case 'Turno': valA = a.turno; valB = b.turno; break;
+            case 'Data': valA = a._dtTimestamp; valB = b._dtTimestamp; break;
+            case 'Status': valA = a.status_macro; valB = b.status_macro; break;
+            default: valA = a._dtTimestamp; valB = b._dtTimestamp;
+        }
+        if (valA < valB) return currentSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return currentSortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+      searchTable(); 
+    }
+
+    function changePage(direction) { currentPage += direction; searchTable(); }
+
+    function renderTableDet(dataToRender) {
+        let tbody = '';
+        let totalItems = dataToRender.length;
+        let totalPages = Math.ceil(totalItems / rowsPerPage);
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+        
+        let start = (currentPage - 1) * rowsPerPage;
+        let end = Math.min(start + rowsPerPage, totalItems);
+        let pageData = dataToRender.slice(start, end);
+
+        for (let i = 0; i < pageData.length; i++) {
+            let r = pageData[i];
+            
+            let statusBadge = '';
+            if(r.status_macro === 'APROVADO') statusBadge = `<span class="s-green status-label"><span class="material-symbols-outlined" style="font-size:16px;">check_circle</span>Atende</span>`;
+            else if(r.status_macro === 'ATENDE VT') statusBadge = `<span class="s-teal status-label"><span class="material-symbols-outlined" style="font-size:16px;">directions_bus</span>Atende VT</span>`;
+            else if(r.status_macro === 'FLEX') statusBadge = `<span class="s-orange status-label"><span class="material-symbols-outlined" style="font-size:16px;">emoji_people</span>Atende (Flex)</span>`;
+            else if(r.status_macro === 'REPROVADO') statusBadge = `<span class="s-red status-label"><span class="material-symbols-outlined" style="font-size:16px;">block</span>Fora Região</span>`;
+            else statusBadge = `<span class="s-gray status-label">Outros</span>`;
+            
+            let baseTag = r.fonte === 'PLAN' ? `<span style="background:var(--text-main); color:var(--card-bg); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:800;">PLAN</span>` : `<span style="background:var(--ml-blue); color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:800;">EMI</span>`;
+
+            tbody += `
+              <tr class="interactive-card">
+                <td><div style="font-weight:600; color:var(--text-main);">${r.candidato}</div><div style="margin-top:4px;">${baseTag}</div></td>
+                <td class="td-dark">${r.operacao}</td>
+                <td>${r.turno}</td>
+                <td>${r._dtDisplay}</td>
+                <td style="font-size:12px; color:var(--text-muted);">${r.status_original}</td>
+                <td>${statusBadge}</td>
+              </tr>
+            `;
+        }
+        
+        if(tbody === '') tbody = `<tr><td colspan="6" style="text-align:center; padding:30px;">Nenhum candidato atende ao critério.</td></tr>`;
+        document.getElementById('tickets-tbody').innerHTML = tbody;
+        
+        document.getElementById('page-info').innerText = totalItems > 0 ? `Mostrando ${start + 1} a ${end} de ${totalItems}` : `Vazio`;
+        document.getElementById('btn-prev').disabled = currentPage === 1;
+        document.getElementById('btn-next').disabled = currentPage === totalPages || totalPages === 0;
+    }
+  </script>
+</body>
+</html>

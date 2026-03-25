@@ -178,95 +178,42 @@
     .drawer-footer button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
     .btn-clear { background: var(--hover-bg); color: var(--text-main); border: 1px solid var(--border-color); }
     .btn-apply { background: var(--ml-yellow); color: #1A202C; }
-/*Filer Tag*/
-.active-filters-tags {
-  display: none;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  margin-bottom: 18px;
-  padding: 10px 12px;
-  border: 1px dashed var(--border-color);
-  border-radius: 10px;
-  background: var(--card-bg);
-  min-height: 44px;
-  align-items: center;
-}
 
-.active-filters-tags.has-filters {
-  display: flex;
-  border-style: solid;
-  border-color: rgba(49,130,206,.35);
-  background: rgba(49,130,206,.04);
-}
+    .active-filters-tags {
+      display: none; gap: 8px; flex-wrap: wrap; margin-top: 10px; margin-bottom: 18px;
+      padding: 10px 12px; border: 1px dashed var(--border-color); border-radius: 10px;
+      background: var(--card-bg); min-height: 44px; align-items: center;
+    }
+    .active-filters-tags.has-filters {
+      display: flex; border-style: solid; border-color: rgba(49,130,206,.35); background: rgba(49,130,206,.04);
+    }
+    .active-filters-title {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-right: 6px;
+    }
+    .active-filters-title .material-symbols-outlined { font-size: 14px; color: var(--ml-blue); }
+    .filter-tag {
+      background: rgba(49,130,206,.12); color: var(--ml-blue); border: 1px solid rgba(49,130,206,.35);
+      padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    }
+    .filter-tag:hover { background: rgba(227,44,43,.10); color: var(--danger); border-color: rgba(227,44,43,.35); }
 
-.active-filters-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-  color: var(--text-muted);
-  margin-right: 6px;
-}
+    .tabs-pills { display: flex; gap: 8px; background: var(--hover-bg); border-radius: 24px; padding: 4px; border: 1px solid var(--border-color); }
+    .tab-pill {
+      padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 700;
+      color: var(--text-muted); cursor: pointer; border: none; background: transparent; transition: .2s;
+    }
+    .tab-pill:hover { color: var(--text-main); }
+    .tab-pill.active { background: var(--ml-yellow); color: #1A202C; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
 
-.active-filters-title .material-symbols-outlined {
-  font-size: 14px;
-  color: var(--ml-blue);
-}
-
-.filter-tag {
-  background: rgba(49,130,206,.12);
-  color: var(--ml-blue);
-  border: 1px solid rgba(49,130,206,.35);
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
-.filter-tag:hover {
-  background: rgba(227,44,43,.10);
-  color: var(--danger);
-  border-color: rgba(227,44,43,.35);
-}
-
-.tabs-pills {
-  display: flex;
-  gap: 8px;
-  background: var(--hover-bg);
-  border-radius: 24px;
-  padding: 4px;
-  border: 1px solid var(--border-color);
-}
-
-.tab-pill {
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-muted);
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  transition: .2s;
-}
-
-.tab-pill:hover { color: var(--text-main); }
-
-.tab-pill.active {
-  background: var(--ml-yellow);
-  color: #1A202C;
-  box-shadow: 0 2px 6px rgba(0,0,0,.08);
-}
-
-
+    /* PROFILE CARD SIDEBAR */
+    .profile-card { padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 12px; }
+    .avatar-shell { width: 44px; height: 44px; border-radius: 50%; background: var(--ml-yellow); padding: 2px; flex-shrink: 0; }
+    .avatar-inner { width: 100%; height: 100%; border-radius: 50%; background: #FFF; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #000; font-weight: 800; font-size: 16px; }
+    .avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-copy h3 { font-size: 14px; font-weight: 700; color: #FFF; line-height: 1.2; }
+    .profile-copy p { font-size: 11px; color: var(--sidebar-text); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
   </style>
 </head>
 <body>
@@ -291,7 +238,7 @@
     </div>
   </div>
 
-<aside class="sidebar">
+  <aside class="sidebar">
     <div class="logo-container">
       <div class="logo-badge">ML</div>
       <div>
@@ -299,19 +246,26 @@
         <div style="font-size: 12px; color: rgba(255,255,255,0.6); font-weight: 500;">Dashboard Fretados</div>
       </div>
     </div>
+
+    <div class="profile-card">
+      <div class="avatar-shell">
+        <div class="avatar-inner" id="avatar-hero">...</div>
+      </div>
+      <div class="profile-copy">
+        <h3 id="titulo-saudacao">Olá, Visitante</h3>
+        <p id="user-email-sidebar">Carregando...</p>
+      </div>
+    </div>
     
     <a id="nav-fretado" href="<?= baseURL ?>?page=Ocupacao" class="nav-btn active mb-2">
       <span class="material-symbols-outlined">directions_bus</span> Ocupação Fretados
     </a>
-    <a id="nav-SLA" class="nav-btn" href="<?= baseURL ?>?page=SLA_Validacao" >
+    <a id="nav-SLA" class="nav-btn" href="<?= baseURL ?>?page=SLA_Validacao">
       <span class="material-symbols-outlined">assignment_turned_in</span> Validações SLA
     </a>
     <a id="nav-avalicao" class="nav-btn" href="<?= baseURL ?>?page=SLA_Candidatos">
       <span class="material-symbols-outlined">how_to_reg</span> Aprovação Candidatos
     </a>
-    <!--<a href="#" id="link-candidatos" class="nav-btn" onclick="navigateSmooth(this.href)">
-      <span class="material-symbols-outlined">how_to_reg</span> Aprovação Candidatos
-    </a>-->
 
     <div class="sidebar-footer" id="sidebar-last-updated">Última atualização<br>--</div>
   </aside>
@@ -351,7 +305,7 @@
           <button class="btn-dark" onclick="toggleFilters()"><span class="material-symbols-outlined" style="font-size: 18px;">filter_alt</span> Filtros Avançados</button>
         </div>
       </div>
-      <!-- Active Filters -->      
+
       <div id="active-filters" class="active-filters-tags"></div>
 
       <div class="presets-row">
@@ -385,27 +339,41 @@
         </div>
       </div>
 
-<div class="table-section" style="margin-bottom:24px;">
-  <div class="section-header" style="margin-bottom: 12px;">
-    <div class="section-header-left">
-      <span class="material-symbols-outlined" style="color: var(--ml-yellow);">stacked_bar_chart</span>
-      <h2 id="chart-ocup-title">Funil de Ocupação</h2>
-    </div>
+      <div class="table-section" style="margin-bottom:24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="color: var(--ml-yellow);">stacked_bar_chart</span>
+            <h2 id="chart-ocup-title" class="chart-title">Funil de Ocupação</h2>
+          </div>
+          <div class="tabs-pills">
+            <button class="tab-pill active" id="btn-chart-regional" onclick="toggleChartModeOcup('REGIONAL')">Por Regional</button>
+            <button class="tab-pill" id="btn-chart-operacao" onclick="toggleChartModeOcup('OPERACAO')">Por Unidade (Operação)</button>
+            <button class="tab-pill" id="btn-chart-turno" onclick="toggleChartModeOcup('TURNO')">Por Turno</button>
+          </div>
+        </div>
+        <div class="section-desc" id="chart-ocup-desc">Distribuição de ocupação por regional</div>
+        <div class="chart-wrapper" style="height: 300px;">
+          <canvas id="chartRegional"></canvas>
+        </div>
+      </div>
 
-    <div class="tabs-pills">
-      <button class="tab-pill active" id="btn-chart-regional" onclick="toggleChartModeOcup('REGIONAL')">Por Regional</button>
-      <button class="tab-pill" id="btn-chart-operacao" onclick="toggleChartModeOcup('OPERACAO')">Por Unidade (Operação)</button>
-      <button class="tab-pill" id="btn-chart-turno" onclick="toggleChartModeOcup('TURNO')">Por Turno</button>
-    </div>
-  </div>
-
-  <div class="section-desc" id="chart-ocup-desc">Distribuição de ocupação por regional</div>
-
-  <div class="chart-wrapper" style="height: 300px;">
-    <canvas id="chartRegional"></canvas>
-  </div>
-</div>
-
+      <div class="table-section" style="margin-bottom:24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="color: var(--ml-yellow);">directions_bus</span>
+            <h2 id="chart-veic-title" class="chart-title">Funil de Veículos</h2>
+          </div>
+          <div class="tabs-pills">
+            <button class="tab-pill active" id="btn-veic-regional" onclick="toggleChartModeVeic('REGIONAL')">Por Regional</button>
+            <button class="tab-pill" id="btn-veic-operacao" onclick="toggleChartModeVeic('OPERACAO')">Por Unidade (Operação)</button>
+            <button class="tab-pill" id="btn-veic-turno" onclick="toggleChartModeVeic('TURNO')">Por Turno</button>
+          </div>
+        </div>
+        <div class="section-desc" id="chart-veic-desc">Quantidade de veículos (linhas únicas) por regional</div>
+        <div class="chart-wrapper" style="height: 300px;">
+          <canvas id="chartVeiculos"></canvas>
+        </div>
+      </div>
 
       <div class="table-section">
         <div class="table-header">
@@ -426,8 +394,7 @@
           <table class="data-table" id="dataTable">
             <thead>
               <tr>
-                <!--<th onclick="sortDataTable('cidade')">Cidade <span class="material-symbols-outlined">swap_vert</span></th> -->
-                <th id="th-dimensao" onclick="sortDataTable('cidade')">Cidade <span class="material-symbols-outlined">swap_vert</span></th>                
+                <th id="th-dimensao" onclick="sortDataTable('cidade')">Cidade <span class="material-symbols-outlined">swap_vert</span></th>
                 <th id="th-bairro" style="display: none;" onclick="sortDataTable('bairro')">Bairro <span class="material-symbols-outlined">swap_vert</span></th>
                 <th onclick="sortDataTable('count')">Pessoas <span class="material-symbols-outlined">swap_vert</span></th>
                 <th onclick="sortDataTable('linhas')">Linhas <span class="material-symbols-outlined">swap_vert</span></th>
@@ -457,6 +424,9 @@
   </main>
 
 <script>
+  /***************************************
+   * ESTADO GLOBAL
+   ***************************************/
   let globalOcupacaoData = [];
   let currentFilteredData = [];
   let tableViewMode = 'CIDADE';
@@ -466,14 +436,20 @@
 
   let mainMap = null, heatLayer = null, cityBubblesLayer = null, mapTileLayer = null;
   let globalTheme = 'light';
+  let mapDarkTile = false;
   let lastUpdateMinutes = 0;
   let myChartRegional = null;
   let chartOcupMode = 'REGIONAL';
 
+  /***************************************
+   * INIT
+   ***************************************/
   document.addEventListener('DOMContentLoaded', function () {
     initMap();
-
     if (typeof fetchDataFromBackend === "function") fetchDataFromBackend();
+
+    // Carrega dados do usuário logado (nome + foto)
+    google.script.run.withSuccessHandler(atualizarUsuario).getDadosUsuario();
 
     setInterval(() => {
       lastUpdateMinutes++;
@@ -482,6 +458,209 @@
     }, 60000);
   });
 
+  /***************************************
+   * PERFIL DO USUÁRIO (sidebar)
+   ***************************************/
+  function atualizarUsuario(dados) {
+    if (!dados) return;
+
+    const tituloEl = document.getElementById('titulo-saudacao');
+    const avatarEl = document.getElementById('avatar-hero');
+    const emailEl = document.getElementById('user-email-sidebar');
+
+    let nomeExibir = '';
+
+    // 1. Tenta usar o nome da People API
+    if (dados.nome && dados.nome !== 'Visitante' && dados.nome !== 'Colaborador') {
+      nomeExibir = dados.nome;
+    }
+    // 2. Fallback: extrai nome do email (ex: ext_vinidutr@... → Vinidutr)
+    else if (dados.email) {
+      let raw = dados.email.split('@')[0];       // ext_vinidutr
+      raw = raw.replace(/^ext_/i, '');            // vinidutr
+      raw = raw.replace(/[._-]/g, ' ');           // espaços
+      // Capitaliza cada palavra
+      nomeExibir = raw.replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    if (nomeExibir && tituloEl) {
+      const primeiroNome = nomeExibir.split(' ')[0];
+      tituloEl.textContent = 'Olá, ' + primeiroNome;
+
+      // Gera iniciais para o avatar fallback
+      const partes = nomeExibir.trim().split(/\s+/);
+      let iniciais = partes[0].charAt(0).toUpperCase();
+      if (partes.length > 1) iniciais += partes[partes.length - 1].charAt(0).toUpperCase();
+      if (avatarEl) avatarEl.textContent = iniciais;
+    }
+
+    if (dados.foto && avatarEl) {
+      avatarEl.innerHTML = '<img src="' + dados.foto + '" alt="Foto">';
+      avatarEl.style.background = 'transparent';
+    }
+
+    if (dados.email && emailEl) {
+      emailEl.textContent = dados.email;
+    } else if (emailEl) {
+      emailEl.textContent = 'Dashboard Fretados';
+    }
+  }
+
+  /***************************************
+   * HELPER: Trata "null", "undefined", null, undefined como ''
+   ***************************************/
+  function safeStr(val) {
+    if (val === null || val === undefined) return '';
+    const s = String(val).trim();
+    if (s === 'null' || s === 'undefined' || s === 'NULL') return '';
+    return s;
+  }
+
+  /***************************************
+   * CÁLCULO DE KPI NO FRONTEND
+   * Mesma lógica da debugKpiOcupacaoBackend:
+   * agrupa por chave (cad+linha), 
+   * MAX(capacidade) por linha, COUNT(*) = passageiros
+   ***************************************/
+  function calcularKpiFromData(data) {
+    console.group('📊 [KPI] calcularKpiFromData');
+    console.log('Total registros recebidos:', data ? data.length : 0);
+
+    if (!data || data.length === 0) {
+      console.warn('⚠️ Array vazio ou nulo — retornando zeros');
+      console.groupEnd();
+      return { totalPassageiros: 0, capacidadeTotal: 0, ocupacaoPct: 0 };
+    }
+
+    // LOG: Amostra dos primeiros 5 registros para ver a estrutura
+    console.log('🔍 Amostra dos 5 primeiros registros:');
+    data.slice(0, 5).forEach((row, i) => {
+      console.log(`  [${i}] chave_cad_linha_turno="${row.chave_cad_linha_turno}" (safeStr="${safeStr(row.chave_cad_linha_turno)}"), linha="${row.linha}", capacidade="${row.capacidade}", cad="${row.cad}", turno="${row.turno}"`);
+    });
+
+    // LOG: Verificar quais campos existem no primeiro registro
+    if (data[0]) {
+      console.log('🔑 Campos disponíveis no objeto:', Object.keys(data[0]).join(', '));
+    }
+
+    // Agrupa por chave — usa chave_cad_linha_turno se válida, senão constrói a partir de cad+linha
+    const porLinha = {};
+    let countSemChave = 0;
+    let countSemLinha = 0;
+    let countSemCap = 0;
+    let countValidos = 0;
+    let countFallback = 0;
+
+    data.forEach(row => {
+      const linha = safeStr(row.linha);
+      const cad = safeStr(row.cad);
+      const turno = safeStr(row.turno);
+      const cap = parseInt(row.capacidade) || 0;
+
+      // Tenta usar chave do backend, senão constrói fallback com mesma lógica: cad_linha_turno
+      let chave = safeStr(row.chave_cad_linha_turno);
+      if (!chave && cad && linha) {
+        chave = cad + '_' + linha + (turno ? '_' + turno : '');
+        countFallback++;
+      }
+
+      // Contadores de debug para entender o que é filtrado
+      if (!chave) { countSemChave++; return; }
+      if (!linha) { countSemLinha++; return; }
+      if (cap <= 0) { countSemCap++; return; }
+
+      countValidos++;
+
+      if (!porLinha[chave]) {
+        porLinha[chave] = { capacidade: 0, passageiros: 0 };
+      }
+      porLinha[chave].passageiros += 1;
+      porLinha[chave].capacidade = Math.max(porLinha[chave].capacidade, cap);
+    });
+
+    console.log('📋 Registros filtrados:');
+    console.log(`  ✅ Válidos (entraram no cálculo): ${countValidos}`);
+    console.log(`  🔄 Usaram fallback cad+linha (chave_cad_linha_turno era "null"): ${countFallback}`);
+    console.log(`  ❌ Sem chave (nem original nem fallback): ${countSemChave}`);
+    console.log(`  ❌ Sem linha: ${countSemLinha}`);
+    console.log(`  ❌ Sem capacidade (<=0): ${countSemCap}`);
+    console.log(`  🔗 Linhas únicas agrupadas: ${Object.keys(porLinha).length}`);
+
+    let totalPassageiros = 0;
+    let capacidadeTotal = 0;
+
+    Object.values(porLinha).forEach(l => {
+      totalPassageiros += l.passageiros;
+      capacidadeTotal += l.capacidade;
+    });
+
+    const ocupacaoPct = capacidadeTotal > 0
+      ? Number(((totalPassageiros / capacidadeTotal) * 100).toFixed(2))
+      : 0;
+
+    // LOG: Top 10 linhas por passageiros (para comparar com backend)
+    const topLinhas = Object.entries(porLinha)
+      .map(([chave, v]) => ({ chave, ...v, pct: v.capacidade > 0 ? ((v.passageiros / v.capacidade) * 100).toFixed(1) : 0 }))
+      .sort((a, b) => b.passageiros - a.passageiros)
+      .slice(0, 10);
+    console.log('🏆 Top 10 linhas (chave | passageiros | capacidade | %):');
+    topLinhas.forEach(l => {
+      console.log(`  ${l.chave} | ${l.passageiros} pax | ${l.capacidade} cap | ${l.pct}%`);
+    });
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`📌 RESULTADO FINAL KPI:`);
+    console.log(`   Passageiros: ${totalPassageiros}`);
+    console.log(`   Capacidade:  ${capacidadeTotal}`);
+    console.log(`   Ocupação:    ${ocupacaoPct}%`);
+    console.log(`   Vagas:       ${Math.max(0, capacidadeTotal - totalPassageiros)}`);
+    console.groupEnd();
+
+    return { totalPassageiros, capacidadeTotal, ocupacaoPct };
+  }
+
+  /***************************************
+   * RENDERIZA KPIs COM ANIMAÇÃO
+   ***************************************/
+  function renderKpis(data) {
+    console.group('🎯 [KPI] renderKpis');
+    console.log('Dados recebidos para KPI:', data ? data.length : 0, 'registros');
+
+    const kpi = calcularKpiFromData(data);
+
+    const vagas = Math.max(0, kpi.capacidadeTotal - kpi.totalPassageiros);
+
+    console.log('🖥️ Valores que serão exibidos nos cards:');
+    console.log(`   Ocupação Média:      ${kpi.ocupacaoPct}%`);
+    console.log(`   Colab. Transportados: ${kpi.totalPassageiros}`);
+    console.log(`   Capacidade Total:     ${kpi.capacidadeTotal}`);
+    console.log(`   Vagas Disponíveis:    ${vagas}`);
+    console.groupEnd();
+
+    animateValue('kpi-ocupacao-media', 0, kpi.ocupacaoPct, 700, true);
+    animateValue('kpi-hc-total', 0, kpi.totalPassageiros, 700, false);
+    animateValue('kpi-capacidade-total', 0, kpi.capacidadeTotal, 700, false);
+    animateValue('kpi-vagas-total', 0, vagas, 700, false);
+
+    // Trend badge
+    const trend = document.getElementById('kpi-trend-ocup');
+    if (trend) {
+      if (kpi.ocupacaoPct > 90) {
+        trend.className = 'kpi-trend down';
+        trend.innerText = '↘ Crítico';
+      } else if (kpi.ocupacaoPct > 75) {
+        trend.className = 'kpi-trend up';
+        trend.innerText = '↗ Atenção';
+      } else {
+        trend.className = 'kpi-trend up';
+        trend.innerText = '↗ Estável';
+      }
+    }
+  }
+
+  /***************************************
+   * HELPERS UI
+   ***************************************/
   function setSelectAll(id) {
     const el = document.getElementById(id);
     if (el) el.value = 'ALL';
@@ -501,6 +680,23 @@
       icon.innerText = 'light_mode';
       if (mapTileLayer) mapTileLayer.setUrl('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
       globalTheme = 'light';
+    }
+  }
+
+  function toggleMapTheme() {
+    const icon = document.getElementById('map-theme-icon');
+    const text = document.getElementById('map-theme-text');
+
+    if (!mapDarkTile) {
+      mapTileLayer.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+      if (icon) icon.innerText = 'light_mode';
+      if (text) text.innerText = 'Modo Claro';
+      mapDarkTile = true;
+    } else {
+      mapTileLayer.setUrl('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+      if (icon) icon.innerText = 'dark_mode';
+      if (text) text.innerText = 'Modo Tático';
+      mapDarkTile = false;
     }
   }
 
@@ -542,6 +738,9 @@
     if (t) t.innerText = '...';
   }
 
+  /***************************************
+   * MAPA
+   ***************************************/
   function initMap() {
     mainMap = L.map('map').setView([-23.5505, -46.6333], 8);
     mapTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -549,10 +748,12 @@
       subdomains: 'abcd',
       maxZoom: 18
     }).addTo(mainMap);
-
     cityBubblesLayer = L.layerGroup().addTo(mainMap);
   }
 
+  /***************************************
+   * FILTROS
+   ***************************************/
   function toggleFilters() {
     document.getElementById('filterDrawer')?.classList.toggle('open');
     document.getElementById('filterOverlay')?.classList.toggle('open');
@@ -566,7 +767,8 @@
   }
 
   function populateFilterDropdowns(data) {
-    let regionais = new Set(), cads = new Set(), turnos = new Set(), cidades = new Set(), bairros = new Set(), linhas = new Set();
+    let regionais = new Set(), cads = new Set(), turnos = new Set(),
+        cidades = new Set(), bairros = new Set(), linhas = new Set();
 
     data.forEach(d => {
       if (d.Regional) regionais.add(String(d.Regional).trim());
@@ -613,7 +815,7 @@
     const fBai = document.getElementById('f-bairro')?.value || 'ALL';
     const fLin = document.getElementById('f-linha')?.value || 'ALL';
 
-    // tags
+    // Tags visuais dos filtros ativos
     const activeFiltersEl = document.getElementById('active-filters');
     if (activeFiltersEl) {
       let tagsHtml = '';
@@ -628,7 +830,7 @@
       activeFiltersEl.classList.toggle('has-filters', tagsHtml !== '');
     }
 
-    // filtro local para mapa/tabela/gráfico
+    // Filtro local no array em memória
     currentFilteredData = (globalOcupacaoData || []).filter(d => {
       return (fReg === 'ALL' || String(d.Regional || '').trim() === fReg) &&
              (fCad === 'ALL' || String(d.cad || '').trim() === fCad) &&
@@ -641,72 +843,39 @@
     document.getElementById('filterDrawer')?.classList.remove('open');
     document.getElementById('filterOverlay')?.classList.remove('open');
 
+    // KPIs calculados localmente com a mesma lógica do backend
+    renderKpis(currentFilteredData);
+
+    // Mapa + Tabela + Gráfico
     renderOcupacaoDashboard(currentFilteredData);
     searchTable();
-
-    // KPI oficial no backend
-    atualizarKpiBackendComFiltros();
   }
 
-  function atualizarKpiBackendComFiltros() {
-    const fReg = document.getElementById('f-regional')?.value || 'ALL';
-    const fCad = document.getElementById('f-cad')?.value || 'ALL';
-    const fTur = document.getElementById('f-turno')?.value || 'ALL';
-    const fCid = document.getElementById('f-cidade')?.value || 'ALL';
-    const fBai = document.getElementById('f-bairro')?.value || 'ALL';
-    const fLin = document.getElementById('f-linha')?.value || 'ALL';
-
-    const filtrosBackend = {
-      regional: fReg === 'ALL' ? '' : fReg,
-      cad: fCad === 'ALL' ? '' : fCad,
-      turno: fTur === 'ALL' ? '' : fTur,
-      cidade: fCid === 'ALL' ? '' : fCid,
-      bairro: fBai === 'ALL' ? '' : fBai,
-      linha: fLin === 'ALL' ? '' : fLin
-    };
-
-    google.script.run
-      .withSuccessHandler(function(kpi) {
-        if (!kpi || kpi.error) {
-          console.warn('KPI backend inválido:', kpi);
-          return;
-        }
-
-        const usuarios = Number(kpi.totalPassageiros ?? kpi.usuarios ?? 0);
-        const capacidade = Number(kpi.capacidadeTotal ?? 0);
-        const ocupacao = Number(kpi.ocupacaoGlobalPct ?? kpi.ocupacaoMedia ?? 0);
-        const vagas = Math.max(0, capacidade - usuarios);
-
-        animateValue('kpi-hc-total', 0, usuarios, 700, false);
-        animateValue('kpi-capacidade-total', 0, capacidade, 700, false);
-        animateValue('kpi-vagas-total', 0, vagas, 700, false);
-        animateValue('kpi-ocupacao-media', 0, ocupacao, 700, true);
-
-        const trend = document.getElementById('kpi-trend-ocup');
-        if (trend) {
-          if (ocupacao > 90) {
-            trend.className = 'kpi-trend down';
-            trend.innerText = 'Crítico';
-          } else {
-            trend.className = 'kpi-trend up';
-            trend.innerText = 'Estável';
-          }
-        }
-      })
-      .withFailureHandler(function(err) {
-        console.error('Erro KPI backend:', err);
-      })
-      .debugKpiOcupacaoBackend(filtrosBackend);
-  }
-
+  /***************************************
+   * FETCH PRINCIPAL — usa getOcupacaoData
+   ***************************************/
   function fetchDataFromBackend() {
     setSkeletons();
 
     google.script.run
       .withSuccessHandler(function(rawData) {
         try {
+          console.group('🚀 [FETCH] getOcupacaoData — dados recebidos');
+          console.log('Tipo do rawData:', typeof rawData);
+          console.log('É string?', typeof rawData === 'string');
+          if (typeof rawData === 'string') {
+            console.log('Primeiros 500 chars:', rawData.substring(0, 500));
+          }
+
           let parsed = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
-          if (parsed && parsed.error) return alert("Erro no Banco:\n" + parsed.error);
+          if (parsed && parsed.error) {
+            console.error('❌ Erro retornado pelo backend:', parsed.error);
+            console.groupEnd();
+            return alert("Erro no Banco:\n" + parsed.error);
+          }
+
+          console.log('parsed.headers?', parsed.headers ? parsed.headers.join(', ') : 'NÃO TEM');
+          console.log('parsed.data?', parsed.data ? parsed.data.length + ' linhas' : 'NÃO TEM');
 
           let data = [];
           if (parsed.headers && parsed.data) {
@@ -715,12 +884,21 @@
               parsed.headers.forEach((h, i) => { obj[h] = row[i]; });
               data.push(obj);
             });
+            console.log('✅ Mapeado headers→objetos. Total:', data.length);
           } else {
             data = parsed || [];
+            console.log('⚠️ Sem headers/data — usando parsed direto. Total:', data.length);
+          }
+
+          // LOG: Estrutura do primeiro registro mapeado
+          if (data.length > 0) {
+            console.log('🔑 Campos do 1º registro:', Object.keys(data[0]).join(', '));
+            console.log('📄 1º registro completo:', JSON.stringify(data[0]));
           }
 
           globalOcupacaoData = data;
           currentFilteredData = globalOcupacaoData;
+          console.groupEnd();
 
           lastUpdateMinutes = 0;
           const t = document.getElementById('header-time-ago');
@@ -737,8 +915,13 @@
           }
 
           populateFilterDropdowns(globalOcupacaoData);
+
+          // KPIs calculados no front (mesma lógica do debugKpiOcupacaoBackend)
+          renderKpis(currentFilteredData);
+
+          // Mapa + Tabela + Gráfico
           renderOcupacaoDashboard(currentFilteredData);
-          atualizarKpiBackendComFiltros();
+
         } catch (e) {
           console.error("Erro ao processar getOcupacaoData:", e);
         }
@@ -750,6 +933,9 @@
       .getOcupacaoData();
   }
 
+  /***************************************
+   * RENDER DASHBOARD (MAPA + TABELA + GRÁFICO)
+   ***************************************/
   function renderOcupacaoDashboard(data) {
     if (!mainMap || !cityBubblesLayer) return;
 
@@ -762,6 +948,7 @@
       const banner = document.getElementById('smart-insight-banner');
       if (banner) banner.style.display = 'none';
       if (typeof renderChartRegional === 'function') renderChartRegional([]);
+      if (typeof renderChartVeiculos === 'function') renderChartVeiculos([]);
       return;
     }
 
@@ -775,7 +962,7 @@
     let cidadesData = {};
     let tabelaBairros = {};
     let tabelaTurnos = {};
-    let linhasUnicas = {}; // para tabela/popup
+    let linhasUnicas = {};
 
     data.forEach(row => {
       const lat = parseFloat(row.latitude);
@@ -789,7 +976,9 @@
       const linha = row.linha ? String(row.linha).toUpperCase().trim() : '';
       const cap = parseInt(row.capacidade) || 0;
 
-      const keyLinha = (cad && linha) ? `${cad}|${linha}` : '';
+      // Usa chave_cad_linha_turno do backend, com fallback cad_linha_turno
+      let keyLinha = safeStr(row.chave_cad_linha_turno);
+      if (!keyLinha && cad && linha) keyLinha = `${cad}_${linha}_${turno}`;
 
       if (keyLinha && cap > 0) {
         if (!linhasUnicas[keyLinha]) linhasUnicas[keyLinha] = { capacidade: 0, ocupantes: 0 };
@@ -817,6 +1006,7 @@
       }
     });
 
+    // Heatmap
     if (heatPoints.length > 0) {
       heatLayer = L.heatLayer(heatPoints, {
         radius: 22, blur: 18, maxZoom: 12, max: 8,
@@ -827,7 +1017,7 @@
       mainMap.flyToBounds(bounds, { padding: [50, 50], duration: 1.2 });
     }
 
-    // bolhas
+    // Bolhas por cidade
     for (const cidadeNome in cidadesData) {
       const d = cidadesData[cidadeNome];
       const centerLat = d.latSum / d.count;
@@ -843,7 +1033,7 @@
       });
       const ocupacaoCidadePerc = capCidade > 0 ? (ocupCidade / capCidade) * 100 : 0;
 
-      const cityBairros = Object.values(tabelaBairros).filter(b => b.cidade === cidadeNome).sort((a,b)=>b.count-a.count);
+      const cityBairros = Object.values(tabelaBairros).filter(b => b.cidade === cidadeNome).sort((a,b) => b.count - a.count);
 
       let bairrosHtml = '';
       cityBairros.forEach(bItem => {
@@ -887,7 +1077,7 @@
       }).bindPopup(popupContent, { className: 'custom-popup' }).addTo(cityBubblesLayer);
     }
 
-    // tabela
+    // TABELA
     currentTableArray = [];
     let criticidadeInsight = { nome: '', taxa: 0 };
 
@@ -896,16 +1086,12 @@
       Object.values(tabelaBairros).forEach(item => {
         let cap = 0, ocup = 0;
         item.linhasBairro.forEach(key => {
-          if (linhasUnicas[key]) {
-            cap += linhasUnicas[key].capacidade;
-            ocup += linhasUnicas[key].ocupantes;
-          }
+          if (linhasUnicas[key]) { cap += linhasUnicas[key].capacidade; ocup += linhasUnicas[key].ocupantes; }
         });
         const percentual = cap > 0 ? (ocup / cap) * 100 : 0;
         if (isCidadeValidaInsight(item.cidade) && percentual > criticidadeInsight.taxa && percentual <= 100) {
           criticidadeInsight = { nome: `bairro ${item.bairro} (${item.cidade})`, taxa: percentual };
         }
-
         currentTableArray.push({
           cidade: item.cidade, bairro: item.bairro, count: item.count, linhas: item.linhasBairro.size,
           vagas: Math.max(0, cap - ocup), percentual
@@ -916,16 +1102,12 @@
       Object.values(tabelaTurnos).forEach(item => {
         let cap = 0, ocup = 0;
         item.linhasTurno.forEach(key => {
-          if (linhasUnicas[key]) {
-            cap += linhasUnicas[key].capacidade;
-            ocup += linhasUnicas[key].ocupantes;
-          }
+          if (linhasUnicas[key]) { cap += linhasUnicas[key].capacidade; ocup += linhasUnicas[key].ocupantes; }
         });
         const percentual = cap > 0 ? (ocup / cap) * 100 : 0;
         if (percentual > criticidadeInsight.taxa && percentual <= 100) {
           criticidadeInsight = { nome: `turno ${item.turno}`, taxa: percentual };
         }
-
         currentTableArray.push({
           cidade: item.turno, bairro: '', count: item.count, linhas: item.linhasTurno.size,
           vagas: Math.max(0, cap - ocup), percentual
@@ -937,16 +1119,12 @@
         const item = cidadesData[cidade];
         let cap = 0, ocup = 0;
         item.linhasCidade.forEach(key => {
-          if (linhasUnicas[key]) {
-            cap += linhasUnicas[key].capacidade;
-            ocup += linhasUnicas[key].ocupantes;
-          }
+          if (linhasUnicas[key]) { cap += linhasUnicas[key].capacidade; ocup += linhasUnicas[key].ocupantes; }
         });
         const percentual = cap > 0 ? (ocup / cap) * 100 : 0;
         if (isCidadeValidaInsight(cidade) && percentual > criticidadeInsight.taxa && percentual <= 100) {
           criticidadeInsight = { nome: `cidade de ${cidade}`, taxa: percentual };
         }
-
         currentTableArray.push({
           cidade, bairro: '', count: item.count, linhas: item.linhasCidade.size,
           vagas: Math.max(0, cap - ocup), percentual
@@ -954,6 +1132,7 @@
       });
     }
 
+    // Insight banner
     const banner = document.getElementById('smart-insight-banner');
     if (banner) {
       if (criticidadeInsight.taxa > 90) {
@@ -965,10 +1144,13 @@
     }
 
     if (typeof renderChartRegional === 'function') renderChartRegional(data);
-
-    sortTable(false);
+    if (typeof renderChartVeiculos === 'function') renderChartVeiculos(data);
+    sortTable();
   }
 
+  /***************************************
+   * TABELA — BUSCA E ORDENAÇÃO
+   ***************************************/
   function searchTable() {
     const input = (document.getElementById("tableSearch")?.value || '').toUpperCase();
     const table = document.getElementById("dataTable");
@@ -982,7 +1164,7 @@
   function sortDataTable(coluna) {
     if (currentSortCol === coluna) currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
     else { currentSortCol = coluna; currentSortDir = 'desc'; }
-    sortTable(true);
+    sortTable();
   }
 
   function sortTable() {
@@ -1024,6 +1206,9 @@
     document.getElementById('bairros-tbody').innerHTML = tbodyHtml;
   }
 
+  /***************************************
+   * EXPORT CSV
+   ***************************************/
   function exportToCSV() {
     if (currentFilteredData.length === 0) return alert("Não há dados para exportar.");
     let csv = "\uFEFFCAD;Regional;Turno;Cidade;Bairro;Linha Fretado;Capacidade Linha;Latitude;Longitude\n";
@@ -1041,6 +1226,9 @@
     document.body.removeChild(link);
   }
 
+  /***************************************
+   * TOGGLE VIEWS (TABELA E GRÁFICO)
+   ***************************************/
   function setTableView(mode) {
     tableViewMode = mode;
 
@@ -1089,6 +1277,9 @@
     renderChartRegional(currentFilteredData || []);
   }
 
+  /***************************************
+   * GRÁFICO DE BARRAS (Chart.js)
+   ***************************************/
   function renderChartRegional(data) {
     const canvas = document.getElementById('chartRegional');
     if (!canvas) return;
@@ -1121,9 +1312,15 @@
 
       if (!grupos[chave]) grupos[chave] = { linhas: {} };
       if (linha !== '') {
-        const keyLinha = cad + '|' + linha;
+        // Usa chave_cad_linha_turno quando disponível, com fallback cad_linha_turno
+        let keyLinha = safeStr(row.chave_cad_linha_turno);
+        if (!keyLinha) {
+          const turnoChart = row.turno ? String(row.turno).trim().toUpperCase() : '';
+          keyLinha = cad + '_' + linha + (turnoChart ? '_' + turnoChart : '');
+        }
         if (!grupos[chave].linhas[keyLinha]) grupos[chave].linhas[keyLinha] = { capacidade, ocupantes: 0 };
         grupos[chave].linhas[keyLinha].ocupantes += 1;
+        grupos[chave].linhas[keyLinha].capacidade = Math.max(grupos[chave].linhas[keyLinha].capacidade, capacidade);
       }
     });
 
@@ -1159,7 +1356,7 @@
           tooltip: { callbacks: { label: c => ` ${c.raw}%` } }
         },
         scales: {
-          y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } },
+          y: { beginAtZero: true, max: 100, grid: { display: false }, ticks: { callback: v => v + '%' } },
           x: { grid: { display: false } }
         },
         onHover: (e, activeEls) => {
@@ -1177,6 +1374,152 @@
           if (chartOcupMode === 'REGIONAL') document.getElementById('f-regional').value = valor;
           if (chartOcupMode === 'OPERACAO') document.getElementById('f-cad').value = valor;
           if (chartOcupMode === 'TURNO') document.getElementById('f-turno').value = valor;
+
+          applyFilters();
+        }
+      }
+    });
+  }
+
+  /***************************************
+   * GRÁFICO FUNIL DE VEÍCULOS (Chart.js)
+   * 1 linha (chave única cad+linha) = 1 veículo
+   ***************************************/
+  let myChartVeiculos = null;
+  let chartVeicMode = 'REGIONAL';
+
+  function toggleChartModeVeic(mode) {
+    chartVeicMode = mode;
+
+    ['btn-veic-regional', 'btn-veic-operacao', 'btn-veic-turno'].forEach(id => {
+      document.getElementById(id)?.classList.remove('active');
+    });
+
+    const titleEl = document.getElementById('chart-veic-title');
+    const descEl = document.getElementById('chart-veic-desc');
+
+    if (mode === 'REGIONAL') {
+      document.getElementById('btn-veic-regional')?.classList.add('active');
+      if (titleEl) titleEl.innerText = 'Funil de Veículos por Regional';
+      if (descEl) descEl.innerText = 'Quantidade de veículos (linhas únicas) por regional';
+    } else if (mode === 'OPERACAO') {
+      document.getElementById('btn-veic-operacao')?.classList.add('active');
+      if (titleEl) titleEl.innerText = 'Funil de Veículos por Unidade (Operação)';
+      if (descEl) descEl.innerText = 'Quantidade de veículos (linhas únicas) por operação (CAD)';
+    } else {
+      document.getElementById('btn-veic-turno')?.classList.add('active');
+      if (titleEl) titleEl.innerText = 'Funil de Veículos por Turno';
+      if (descEl) descEl.innerText = 'Quantidade de veículos (linhas únicas) por turno';
+    }
+
+    renderChartVeiculos(currentFilteredData || []);
+  }
+
+  function renderChartVeiculos(data) {
+    const canvas = document.getElementById('chartVeiculos');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    if (myChartVeiculos) myChartVeiculos.destroy();
+
+    if (!data || data.length === 0) {
+      myChartVeiculos = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: ['Sem dados'], datasets: [{ data: [0], backgroundColor: ['#CBD5E0'] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+      return;
+    }
+
+    // Agrupa linhas únicas por dimensão escolhida
+    const grupos = {};
+
+    data.forEach(row => {
+      const regional = row.Regional ? String(row.Regional).trim().toUpperCase() : 'N/I';
+      const operacao = row.cad ? String(row.cad).trim().toUpperCase() : 'N/I';
+      const turno = row.turno ? String(row.turno).trim().toUpperCase() : 'N/I';
+      const linha = row.linha ? String(row.linha).trim().toUpperCase() : '';
+      const cad = row.cad ? String(row.cad).trim().toUpperCase() : 'N/A';
+
+      if (!linha) return; // sem linha = sem veículo
+
+      let chave = regional;
+      if (chartVeicMode === 'OPERACAO') chave = operacao;
+      if (chartVeicMode === 'TURNO') chave = turno;
+
+      // Identifica veículo único por cad+linha (1 linha = 1 veículo)
+      const veiculoKey = cad + '_' + linha;
+
+      if (!grupos[chave]) grupos[chave] = new Set();
+      grupos[chave].add(veiculoKey);
+    });
+
+    let arr = Object.keys(grupos).map(nome => ({
+      nome,
+      veiculos: grupos[nome].size
+    })).sort((a, b) => b.veiculos - a.veiculos);
+
+    if (chartVeicMode === 'OPERACAO') arr = arr.slice(0, 15);
+
+    const labels = arr.map(x => x.nome);
+    const valores = arr.map(x => x.veiculos);
+
+    // Gradiente de cores baseado na quantidade (mais veículos = mais escuro)
+    const maxVal = Math.max(...valores, 1);
+    const cores = valores.map(v => {
+      const ratio = v / maxVal;
+      if (ratio > 0.75) return '#2B6CB0';
+      if (ratio > 0.5) return '#3182CE';
+      if (ratio > 0.25) return '#63B3ED';
+      return '#90CDF4';
+    });
+
+    myChartVeiculos = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Veículos',
+          data: valores,
+          backgroundColor: cores,
+          borderRadius: 8,
+          maxBarThickness: 56
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: c => ` ${c.raw} veículo${c.raw !== 1 ? 's' : ''}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { display: false },
+            ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' }
+          },
+          x: { grid: { display: false } }
+        },
+        onHover: (e, activeEls) => {
+          e.native.target.style.cursor = activeEls.length ? 'pointer' : 'default';
+        },
+        onClick: (e, activeEls) => {
+          if (!activeEls.length) return;
+          const idx = activeEls[0].index;
+          const valor = labels[idx];
+
+          document.getElementById('f-regional').value = 'ALL';
+          document.getElementById('f-cad').value = 'ALL';
+          document.getElementById('f-turno').value = 'ALL';
+
+          if (chartVeicMode === 'REGIONAL') document.getElementById('f-regional').value = valor;
+          if (chartVeicMode === 'OPERACAO') document.getElementById('f-cad').value = valor;
+          if (chartVeicMode === 'TURNO') document.getElementById('f-turno').value = valor;
 
           applyFilters();
         }

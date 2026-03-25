@@ -567,7 +567,7 @@ function getOcupacaoData() {
     
     if (response.getResponseCode() !== 200) return JSON.stringify({ error: result.error.message });
     var resultado = JSON.stringify(formatBqResults(result));
-    console.log("Resultado : " + resultado) ;
+    //console.log("Resultado : " + resultado) ;
     console.log("Finalizando getOcupacaoData");
     return resultado;
   } catch (e) {
